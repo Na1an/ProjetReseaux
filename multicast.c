@@ -1,16 +1,4 @@
-#define _GNU_SOURCE
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <net/if.h>
-
-#define BUF_SIZE 4096
-#define PORT 4242
-#define ADDR "ff02::4242:4242" 
+#include "multicast.h"
 
 int main(){
 

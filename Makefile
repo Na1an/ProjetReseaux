@@ -9,7 +9,7 @@ ALL = multicast
 
 all : $(ALL)
 
-multicast: multicast.c
-
+multicast: multicast.o
+multicast.o: multicast.h multicast.c
 cleanall:
 	rm -rf *~ $(ALL)
