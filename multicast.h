@@ -1,4 +1,5 @@
 #define _GNU_SOURCE
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -7,14 +8,22 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#include <errno.h>
+#include <sys/select.h>
+#include <netdb.h>
+
+//#include <inttypes.h>
+//#include <fcntl.h>
+#include <sys/time.h>
 
 #define BUF_SIZE 4096
-#define PORT 1212
-#define ADDR "jch.irif.fr" 
+#define PORT "1212"
+#define IFCONFIG "wlp2s0"//Non
+#define ADDR /**/"localhost"/*/"jch.irif.fr"/**/
 
 typedef __int128 uint128_t;
 
-typedef struct{
+typedef struct{//Ne pas Suppr!
 	uint8_t Type;
 	uint8_t Length;
 
@@ -27,9 +36,9 @@ typedef struct{
 	uint8_t Magic;
 	uint8_t Version;
 
-	uint16_t BodyLength;
+	uint16_t Body_Length;
 
-	TLV Tlv;
+	TLV Tlv;//char * Tlv
 
 } Message;
 
@@ -87,7 +96,7 @@ typedef struct{
 	uint32_t Nonce;
 
 	uint8_t Type2; //à discuter
-	//Data Data; // à discuter
+	//Data Data; // à discuter//char * Data
 
 } Data;
 
@@ -108,7 +117,7 @@ typedef struct{
 	uint8_t Length;
 
 	uint8_t Code;
-	Message Message;
+	Message Message;//char * Message
 
 } GoAway;
 
@@ -118,7 +127,7 @@ typedef struct{
 	uint8_t Type; // = 7;
 	uint8_t Length;
 
-	Message Message;
+	Message Message;//char * Message
 
 } Warning;
 
