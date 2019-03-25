@@ -10,6 +10,7 @@
 #include <net/if.h>
 #include <errno.h>
 #include <sys/select.h>
+#include <inttypes.h>
 #include <netdb.h>
 
 //#include <inttypes.h>
@@ -18,12 +19,13 @@
 
 #define BUF_SIZE 4096
 #define PORT "1212"
-#define IFCONFIG "wlp2s0"//Non
-#define ADDR /**/"localhost"/*/"jch.irif.fr"/**/
+//#define IFCONFIG "wlp2s0"//Non
+#define ADDR /*/"localhost"/*/"jch.irif.fr"/**/
 
 typedef __int128 uint128_t;
 
-typedef struct{//Ne pas Suppr!
+typedef struct{
+
 	uint8_t Type;
 	uint8_t Length;
 

@@ -53,7 +53,7 @@ int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) {
 	}*/
 
 	int val_1 = 1;
-	int val_0 = 0;
+	//int val_0 = 0;
 
 	err = setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &val_1, sizeof(val_1));
 	if(err < 0) {
@@ -96,6 +96,12 @@ int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) {
 
 int main() {
 	
+	uint64_t id =
+	(((uint64_t) rand() <<  0) & 0x000000000000FFFFull) | 
+	(((uint64_t) rand() << 16) & 0x00000000FFFF0000ull) | 
+	(((uint64_t) rand() << 32) & 0x0000FFFF00000000ull) |
+	(((uint64_t) rand() << 48) & 0xFFFF000000000000ull);
+
 	int sock, rc;
 	struct sockaddr_in6 local_addr;
 
@@ -111,12 +117,26 @@ int main() {
 			exit(EXIT_FAILURE);
 	}
 
-	char reply[BUF_SIZE];
-	int reply_len = snprintf(reply, BUF_SIZE, "@Bai : Bienvenue");
+	TLV tlv;
+	memset(&tlv,0,BUF_SIZE-32);
+
+	tlv.Type = 2;
+	tlv.Length = 8;
+	//tlv.Source_Id = id;
+
+	Message reply;
+	memset(&reply,0,BUF_SIZE);
+
+	reply.Magic = 93;
+	reply.Version = 2;
+	reply.Body_Length = sizeof(tlv);
+	reply.Tlv = (TLV)tlv;
+
+	int reply_len = sizeof(reply);
 	socklen_t client_len = sizeof(local_addr);
 
-	char buf[BUF_SIZE];
-	memset(buf,0,BUF_SIZE);
+	Message buf;
+	memset(&buf,0,BUF_SIZE);
 
 	struct timeval tv;
 	fd_set readfds;
@@ -125,8 +145,7 @@ int main() {
 
 	again:
 
-	printf("%d, %s\n", reply_len, reply);
-	rc = sendto(sock, reply, reply_len, 0, (struct sockaddr *)&local_addr, (socklen_t)client_len);
+	rc = sendto(sock, &reply, reply_len, 0, (struct sockaddr *)&local_addr, (socklen_t)client_len);
 	
 	if(rc < 0){
 		perror("sendto");
@@ -170,10 +189,17 @@ int main() {
   
 	ok:
 
-	printf("%s\n", buf);
-	memset(buf,0,BUF_SIZE);
+	if(buf.Magic != 93 || buf.Version != 2) {
+		perror("Magic");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("%" PRIu8 " -> %s\n",buf.Tlv.Type,buf.Tlv.Body);
+
+	memset(&buf,0,BUF_SIZE);
 
 	goto again2;//On attend 10s avant de relancer
+
 
 	return 0;
 }
