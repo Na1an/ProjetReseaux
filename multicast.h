@@ -17,6 +17,7 @@
 //#include <fcntl.h>
 #include <sys/time.h>
 
+#define DEBUG 1
 #define BUF_SIZE 4096
 #define PORT "1212"
 //#define IFCONFIG "wlp2s0"//Non
@@ -29,7 +30,7 @@ typedef struct{
 	uint8_t Type;
 	uint8_t Length;
 
-	char * Body; //à discuter
+	char * Body;
 
 } TLV;
 
@@ -40,7 +41,7 @@ typedef struct{
 
 	uint16_t Body_Length;
 
-	TLV Tlv;//char * Tlv
+	TLV Tlv;
 
 } Message;
 
@@ -55,7 +56,7 @@ typedef struct{
 	uint8_t Type; // = 1;
 	uint8_t Length;
 
-	char * MBZ; //à discuter
+	char * MBZ;
 
 } PadN;
 
@@ -97,8 +98,8 @@ typedef struct{
 	uint64_t Sender_Id;
 	uint32_t Nonce;
 
-	uint8_t Type2; //à discuter
-	//Data Data; // à discuter//char * Data
+	uint8_t Type2;
+	char * Data;
 
 } Data;
 
@@ -119,7 +120,7 @@ typedef struct{
 	uint8_t Length;
 
 	uint8_t Code;
-	Message Message;//char * Message
+	char * Message;
 
 } GoAway;
 
@@ -129,7 +130,7 @@ typedef struct{
 	uint8_t Type; // = 7;
 	uint8_t Length;
 
-	Message Message;//char * Message
+	char * Message;
 
 } Warning;
 
