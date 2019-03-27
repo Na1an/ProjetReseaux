@@ -91,7 +91,7 @@ int main() {
 	//PadN pn;
 
 	Hello_short hello_s;
-	memset(&hello_s,0,sizeof(hello_s_len));
+	memset(&hello_s,0,sizeof(hello_s));
 
 	hello_s.Type = 2;
 	hello_s.Length = 8;
@@ -102,7 +102,7 @@ int main() {
 
 	msg.Magic = 93;
 	msg.Version = 2;
-	msg.Body_Length = hello_s_len;
+	//msg.Body_Length = hello_s_len;
 	memcpy(&msg.Tlv,&hello_s,sizeof(hello_s));
 
 	Hello_short hello2;
