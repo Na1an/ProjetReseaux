@@ -1,6 +1,6 @@
 #include "multicast.h"
 
-int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) {
+int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) { // n'égale pas 0, ça pose du problème
 
 	int err = -1;
 
@@ -20,13 +20,15 @@ int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) {
 	/* Init sock */
 	for (
 		p = r;
-		(NULL != p && (*sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0);
+		((NULL != p) && ((*sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0));
 		p = p->ai_next
 	);
 	if (NULL == p) {
 		perror("create socket");
 		return -2;
 	}
+
+	printf("sock : %d\n", *sock);
 
 	/* Init addr */
 	*addr = *((struct sockaddr_in6*) p->ai_addr);
@@ -36,8 +38,7 @@ int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) {
 	/* Set Option sock */
 
 	int val_1 = 1;
-	//int val_0 = 0;
-
+	
 	err = setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &val_1, sizeof(val_1));
 	if(err < 0) {
 		perror("setsockopt - SOL_REUSEADDR");
@@ -53,6 +54,8 @@ int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) {
 	return 0;
 }
 
+// uint64_t lg = ;
+
 int main() {
 
 	int sock, rc;
@@ -65,7 +68,7 @@ int main() {
 	memset(recvMsg, 0, BUF_SIZE);
 
 	int recv_len = snprintf(recvMsg, BUF_SIZE, "Je suis un Ninja!");//A ENLEVER
-
+	
 	switch (get_socket_and_server_addr(&sock, &local_addr)) {
 		case -1:
 			fprintf(stderr, "Error: Find host.\n");
@@ -88,30 +91,32 @@ int main() {
 	//PadN pn;
 
 	Hello_short hello_s;
-	int hello_s_len = sizeof(hello_s);
 	memset(&hello_s,0,sizeof(hello_s_len));
-
-	//Hello_long hello_l;
-	//...
 
 	hello_s.Type = 2;
 	hello_s.Length = 8;
-	hello_s.Source_Id = id;
+	hello_s.Source_Id= id;
 
 	Message msg;
-	int msg_len = sizeof(msg);
-	memset(&msg,0,msg_len);
+	memset(&msg,0,sizeof(Message));
 
 	msg.Magic = 93;
 	msg.Version = 2;
 	msg.Body_Length = hello_s_len;
-	memcpy(&msg.Tlv,&hello_s,hello_s_len);
+	memcpy(&msg.Tlv,&hello_s,sizeof(hello_s));
 
+	Hello_short hello2;
+	memcpy(&hello2, &msg.Tlv, sizeof(msg.Tlv));
+
+
+	printf("Type: %" PRIu8 "\n", hello2.Type);
+	printf("Lenght: %" PRIu8 "\n", hello2.Length);
+	printf("SOurce_id : %" PRIu64 "\n", hello2.Source_Id);
+	printf("id %" PRIu64"\n", id);
 	Message buf;
 	int buf_len = sizeof(buf);
 	memset(&buf,0,buf_len);
 
-	memcpy(sendMsg,&msg,msg_len);//Recuperer taille memcpy !!!
 
 	struct timeval tv;
 	fd_set readfds;
@@ -124,9 +129,10 @@ int main() {
 
 	again:
 
-	rc = sendto(sock, /*/sendMsg/*/recvMsg/**/, /*/BUF_SIZE/*/recv_len/*???*/, 0, (struct sockaddr *)&local_addr, (socklen_t)client_len);
+	rc = sendto(sock, &msg, sizeof(msg), 0, (struct sockaddr *)&local_addr, (socklen_t)client_len);
 	
 	if(rc < 0){
+		//printf("rc = :%d", rc);
 		perror("sendto");
 		exit(EXIT_FAILURE);
 	}

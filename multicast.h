@@ -20,8 +20,7 @@
 #define DEBUG 1
 #define BUF_SIZE 4096
 #define PORT "1212"
-//#define IFCONFIG "wlp2s0"//Non
-#define ADDR /*/"localhost"/*/"jch.irif.fr"/**/
+#define ADDR "jch.irif.fr"
 
 typedef __int128 uint128_t;
 
@@ -30,7 +29,7 @@ typedef struct{
 	uint8_t Type;
 	uint8_t Length;
 
-	char * Body;
+	char Body[BUF_SIZE - 48];
 
 } TLV;
 
@@ -98,7 +97,7 @@ typedef struct{
 	uint64_t Sender_Id;
 	uint32_t Nonce;
 
-	uint8_t Type2;
+	uint8_t Type2; //à discuter
 	char * Data;
 
 } Data;
