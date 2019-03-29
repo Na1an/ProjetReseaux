@@ -1,4 +1,4 @@
-#include "multicast.h"
+#include "multicast.h"/**//*//**/
 
 int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) { // n'égale pas 0, ça pose du problème
 
@@ -28,7 +28,9 @@ int get_socket_and_server_addr(int *sock, struct sockaddr_in6 *addr) { // n'éga
 		return -2;
 	}
 
-	printf("sock : %d\n", *sock);
+	if(DEBUG) {
+		printf("sock : %d\n", *sock);
+	}
 
 	/* Init addr */
 	*addr = *((struct sockaddr_in6*) p->ai_addr);
@@ -61,14 +63,12 @@ int main() {
 	int sock, rc;
 
 	struct sockaddr_in6 local_addr;
-	socklen_t client_len = sizeof(local_addr);
+	socklen_t addr_len = sizeof(local_addr);
 
 	char sendMsg[BUF_SIZE], recvMsg[BUF_SIZE];
 	memset(sendMsg, 0, BUF_SIZE);
 	memset(recvMsg, 0, BUF_SIZE);
 
-	int recv_len = snprintf(recvMsg, BUF_SIZE, "Je suis un Ninja!");//A ENLEVER
-	
 	switch (get_socket_and_server_addr(&sock, &local_addr)) {
 		case -1:
 			fprintf(stderr, "Error: Find host.\n");
@@ -87,35 +87,91 @@ int main() {
 	(((uint64_t) rand() << 32) & 0x0000FFFF00000000ull) |
 	(((uint64_t) rand() << 48) & 0xFFFF000000000000ull);
 
-	//Pad1 p1;
-	//PadN pn;
+	if(DEBUG) {
+		printf("Id = %" PRIu64 "\n", id);
+	}
 
+	/*Pad1:
+	Pad1 p1;
+	int p1_len = sizeof(p1);
+	memset(&p1,0,p1_len);
+	p1.Type = 0;
+	/**/
+	
+	/*PadN:
+	PadN pn;
+	int pn_len = sizeof(pn);
+	memset(&pn,0,pn_len);
+	pn.Type = 1;
+	/**/
+	
+	//*Hello_short:
 	Hello_short hello_s;
-	memset(&hello_s,0,sizeof(hello_s));
-
+	int hello_s_len = sizeof(hello_s);
+	memset(&hello_s,0,hello_s_len);//Taille???
 	hello_s.Type = 2;
 	hello_s.Length = 8;
 	hello_s.Source_Id= id;
+	/**/
+	
+	/*Hello_long:
+	Hello_long hello_l;
+	int hello_l_len = sizeof(hello_l);
+	memset(&hello_l,0,hello_l_len);
+	hello_l.Type = 2;
+	hello_s.Length = 16;
+	hello_s.Source_Id= id;
+	/**/
+
+	Message buf;
+	int buf_len = sizeof(buf);//Taille???
+	memset(&buf,0,buf_len);//Taille???
 
 	Message msg;
-	memset(&msg,0,sizeof(Message));
-
+	int msg_len = sizeof(msg);
+	memset(&msg,0,msg_len);//Taille???
 	msg.Magic = 93;
 	msg.Version = 2;
-	//msg.Body_Length = hello_s_len;
-	memcpy(&msg.Tlv,&hello_s,sizeof(hello_s));
+
+	msg.Body_Length = hello_s_len;//Taille???
+	memcpy(&msg.Tlv,&hello_s,sizeof(hello_s));//Taille???
+
+	memcpy(&sendMsg, &msg, BUF_SIZE);//Taille???
+
+	/*YUCHEN TEST/
 
 	Hello_short hello2;
 	memcpy(&hello2, &msg.Tlv, sizeof(msg.Tlv));
 
-
 	printf("Type: %" PRIu8 "\n", hello2.Type);
 	printf("Lenght: %" PRIu8 "\n", hello2.Length);
-	printf("SOurce_id : %" PRIu64 "\n", hello2.Source_Id);
-	printf("id %" PRIu64"\n", id);
-	Message buf;
-	int buf_len = sizeof(buf);
-	memset(&buf,0,buf_len);
+	printf("Source_id : %" PRIu64 "\n", hello2.Source_Id);
+
+	/*FIN YUCHEN TEST*/
+
+	/*SEB TEST/
+	Message mseb;
+	memset(&mseb, 0, BUF_SIZE);
+	
+	//printf("%d\n", memcpy(&mseb, &sendMsg, BUF_SIZE));
+
+	printf("%"PRIu8"\n",mseb.Magic);
+	printf("%"PRIu8"\n",mseb.Version);
+	printf("%"PRIu8"\n",mseb.Body_Length);
+	if(mseb.Tlv.Type == 2) {
+		if(mseb.Tlv.Length == 8) {
+			Hello_short hsseb;
+			memset(&hsseb, 0, sizeof(hsseb));
+			memcpy(&hsseb, &mseb.Tlv, sizeof(hsseb));
+			printf("%"PRIu64"\n", hsseb.Source_Id);
+		} else {
+			printf("Hello Long ? : %"PRIu8"\n", mseb.Tlv.Length);
+		}
+	} else {
+		printf("Pas Hello\n");
+	}
+
+	/*FIN SEB TEST*/
 
 
 	struct timeval tv;
@@ -124,15 +180,14 @@ int main() {
 	FD_SET(sock, &readfds);
 
 	if(DEBUG) {
-		printf("%s\n",sendMsg);/**//*//**/
+		printf("SendMsg : %s\n",sendMsg);
 	}
 
 	again:
 
-	rc = sendto(sock, &msg, sizeof(msg), 0, (struct sockaddr *)&local_addr, (socklen_t)client_len);
+	rc = sendto(sock, &sendMsg, BUF_SIZE, 0, (struct sockaddr *)&local_addr, (socklen_t)addr_len);//Taille???
 	
-	if(rc < 0){
-		//printf("rc = :%d", rc);
+	if(rc < 0) {
 		perror("sendto");
 		exit(EXIT_FAILURE);
 	}
@@ -181,17 +236,18 @@ int main() {
 	memcpy(&buf,recvMsg,BUF_SIZE);
 
 	if(buf.Magic != 93 || buf.Version != 2) {
-		perror("Magic");
-		exit(EXIT_FAILURE);
+		if(DEBUG) {
+			printf("Message Rejeté");
+		}
 	}
 
 	if(DEBUG) {
-		printf("%" PRIu8 " -> %s\n",buf.Tlv.Type,buf.Tlv.Body);
+		printf("MESSAGE RECU, IL FAUT LE TRAITER MAINTENANT!");
 	}
 
 	memset(&buf,0,BUF_SIZE);
 
-	goto again2;//On attend 10s avant de relancer
+	goto ok;
 
 
 	return 0;
