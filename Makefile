@@ -5,7 +5,7 @@ CFLAGS =-Wall -g -std=c11
 
 LDLIBS= -lm
 
-ALL = multicast
+ALL = pair
 
 all : $(ALL)
 
