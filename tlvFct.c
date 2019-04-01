@@ -27,7 +27,7 @@ uint8_t getMsg_Version(char * msg) {
 uint16_t getMsg_Body_Length(char * msg) {
 	uint16_t len;
 	memcpy(&len, msg+2, 2);
-	return len;
+	return ntohs(len);
 }
 
 char * getMsg_Tlv(char * msg) {
@@ -35,10 +35,11 @@ char * getMsg_Tlv(char * msg) {
 }
 
 int setMsg_Body(char * msg, char * body, uint16_t len) {
-	uint16_t l = getMsg_Body_Length(msg);
+	uint16_t l = ntohs(getMsg_Body_Length(msg));
 	memcpy(msg+4+l, body, len);
 	l += len;
-	memcpy(msg+2, &l, 2);
+	uint16_t h = htons(l);
+	memcpy(msg+2, &h, 2);
 	return 4+l;
 }
 
@@ -88,7 +89,7 @@ int createPadN(char * pad, uint8_t len) {
 uint64_t getHello_Source_Id(char * hello) {
 	uint64_t sId;
 	memcpy(&sId, hello+2, 8);
-	return sId;
+	return ntohs(sId);
 }
 
 
@@ -98,9 +99,10 @@ int createHello_short(char * hello_s, uint64_t sId) {
 	memset(hello_s, 0, BUF_SIZE-4);
 	uint8_t type = 0x2;//2;
 	uint8_t len = 0x8;//8;
+	uint64_t i = htons(sId);
 	memcpy(hello_s, &type, 1);
 	memcpy(hello_s+1, &len, 1);
-	memcpy(hello_s+2, &sId, 8);
+	memcpy(hello_s+2, &i, 8);
 	return 10;
 }
 
@@ -111,17 +113,19 @@ int createHello_long(char * hello_l, uint64_t sId, uint64_t dId) {
 	memset(hello_l, 0, BUF_SIZE-4);
 	uint8_t type = 0x2;//2;
 	uint8_t len = 0x10;//16;
+	uint64_t si = htons(sId);
+	uint64_t di = htons(dId);
 	memcpy(hello_l, &type, 1);
 	memcpy(hello_l+1, &len, 1);
-	memcpy(hello_l+2, &sId,8);
-	memcpy(hello_l+10, &dId, 8);
+	memcpy(hello_l+2, &si,8);
+	memcpy(hello_l+10, &di, 8);
 	return 18;
 }
 
 uint64_t getHello_long_Destination_Id(char * hello_l) {
 	uint64_t dId;
 	memcpy(&dId, hello_l+10, 8);
-	return dId;
+	return ntohs(dId);
 }
 
 
@@ -157,23 +161,25 @@ int createData(char * data, uint64_t sId, uint32_t nonce) {
 	memset(data, 0, BUF_SIZE-4);
 	uint8_t type = 0x4;//4;
 	uint8_t len = 0xD;//13;
+	uint64_t i = htons(sId);
+	uint32_t n = htons(nonce);
 	memcpy(data, &type, 1);
 	memcpy(data+1, &len, 1);
-	memcpy(data+2, &sId, 8);
-	memcpy(data+10, &nonce, 4);
+	memcpy(data+2, &i, 8);
+	memcpy(data+10, &n, 4);
 	return 15;
 }
 
 uint64_t getData_Sender_Id(char * data) {
 	uint64_t sId;
 	memcpy(&sId, data+2, 8);
-	return sId;
+	return ntohs(sId);
 }
 
 uint32_t getData_Nonce(char * data) {
 	uint32_t nonce;
 	memcpy(&nonce, data+10, 4);
-	return nonce;
+	return ntohs(nonce);
 }
 
 uint8_t getData_Type(char * data) {
@@ -207,23 +213,25 @@ int createAck(char * ack, uint64_t sId, uint32_t nonce) {
 	memset(ack, 0, BUF_SIZE-4);
 	uint8_t type = 0x5;//5;
 	uint8_t len = 0xC;//12;
+	uint64_t i = htons(sId);
+	uint32_t n = htons(nonce);
 	memcpy(ack, &type, 1);
 	memcpy(ack+1, &len, 1);
-	memcpy(ack+2, &sId, 8);
-	memcpy(ack+10, &nonce, 4);
+	memcpy(ack+2, &i, 8);
+	memcpy(ack+10, &n, 4);
 	return 14;
 }
 
 uint64_t getAck_Sender_Id(char * ack) {
 	uint64_t sId;
 	memcpy(&sId, ack+2, 8);
-	return sId;
+	return ntohs(sId);
 }
 
 uint32_t getAck_Nonce(char * ack) {
 	uint32_t nonce;
 	memcpy(&nonce, ack+10, 4);
-	return nonce;
+	return ntohs(nonce);
 }
 
 
@@ -240,8 +248,8 @@ int createGoAway(char * goAway, uint8_t code, char * message, int taille) {
 	return taille+3;
 }
 
-uint64_t getGoAway_Code(char * goAway) {
-	uint64_t code;
+uint8_t getGoAway_Code(char * goAway) {
+	uint8_t code;
 	memcpy(&code, goAway+2, 1);
 	return code;
 }

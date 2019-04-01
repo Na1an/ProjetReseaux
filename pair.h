@@ -23,6 +23,7 @@
 #include <sys/time.h>
 
 #define DEBUG 1
+#define VUE 1
 #define MON_PORT 4242
 #define PROF_PORT 1212
 #define PROF_ADDR "jch.irif.fr"

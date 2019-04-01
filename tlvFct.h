@@ -96,7 +96,7 @@ uint32_t getAck_Nonce(char * ack);
 
 int createGoAway(char * goAway, uint8_t code, char * message, int taille);
 
-uint64_t getGoAway_Code(char * goAway);
+uint8_t getGoAway_Code(char * goAway);
 
 char * getGoAway_Message(char * goAway);
 

@@ -1,10 +1,10 @@
 #include "pair.h"
 #include "tlvFct.h"
 
-int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, int port) {
+int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, int port) {//Ici socket non utilisee Normal ???
 
 	char string_port[10];
-	snprintf(string_port,10,"%d",port);printf("%s\n",string_port);
+	snprintf(string_port,10,"%d",port);
 
 	memset(addr, 0, sizeof(struct sockaddr_in6));
 
@@ -27,6 +27,7 @@ int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, 
 		((NULL != p) && ((*sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0));
 		p = p->ai_next
 	);
+
 	if (NULL == p) {
 		perror("create socket");
 		return -2;
@@ -58,6 +59,7 @@ int set_addr_pair(int *sock) {
 
 	/* Set Option sock */
 
+	int val_0 = 0;
 	int val_1 = 1;
 	
 	rc = setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &val_1, sizeof(val_1));
@@ -67,15 +69,10 @@ int set_addr_pair(int *sock) {
 		exit(EXIT_FAILURE);
 	}
 	
-	/*rc = setsockopt(*sock, IPPROTO_IPV6, IPV6_V6ONLY, &val_1, sizeof(val_1));
+	rc = setsockopt(*sock, IPPROTO_IPV6, IPV6_V6ONLY, &val_0, sizeof(val_0));
 	if(rc < 0) {
 		perror("setsockopt - IPV6_V6ONLY");
-		return -3;
-	}*/
-
-	rc = bind(*sock, (struct sockaddr*)&server, sizeof(server));
-	if(rc < 0) {
-		perror("Pas bind");
+		fprintf(stderr, "Error: Set Option.\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -143,6 +140,8 @@ int main() {
 		printf("Id = %" PRIu64 "\n", id);
 	}
 
+	//Fin de l'Initialisation
+
 	struct timeval tv;
 	fd_set readfds;
 	FD_ZERO(&readfds);
@@ -165,7 +164,7 @@ int main() {
 	get_voisin_addr(potentiels->voisin, &dest_addr);
 
 
-	if(DEBUG) {
+	if(DEBUG && VUE) {
 		//On verifie les données
 
 		printf("Magic : %"PRIu8"\n", getMsg_Magic(sendMsg));
@@ -176,13 +175,13 @@ int main() {
 
 		printf("Type : %"PRIu8"\n", getTlv_Type(tlv));
 		printf("Length : %"PRIu8"\n", getTlv_Length(tlv));
-		printf("Length : %"PRIu64"\n", getHello_Source_Id(tlv));
+		printf("Source_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
 
 	}
 
 	again:
 
-	rc = sendto(sock, &sendMsg, /*/BUF_SIZE/*/size/**/, 0, (struct sockaddr *)&dest_addr, (socklen_t)sizeof(dest_addr));
+	rc = sendto(sock, &sendMsg, size, 0, (struct sockaddr *)&dest_addr, (socklen_t)sizeof(dest_addr));
 	
 	if(rc < 0) {
 		perror("sendto");
@@ -192,8 +191,6 @@ int main() {
 	if(DEBUG) {
 		printf("Message Envoyé ! : %s\n",sendMsg);
 	}
-	
-	rc = recvfrom(sock, recvMsg, BUF_SIZE, 0, NULL, NULL);////////////////////////////////ICI
 
 	//again2://TODO-> Plus Tard
 
@@ -209,7 +206,7 @@ int main() {
 
 	if(rc > 0) {
 		if(FD_ISSET(sock, &readfds)) {
-			rc = recvfrom(sock, recvMsg, BUF_SIZE, 0, NULL, NULL);
+			rc = recvfrom(sock, recvMsg, BUF_SIZE, 0, NULL, NULL);//NE PAS METTRE NULL, NULL !!!
 			if(rc < 0) {
 				if(errno == EAGAIN) {
 					goto again;
