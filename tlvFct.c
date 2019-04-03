@@ -311,10 +311,10 @@ int printMsg(char * msg) {
 
 		switch(type) {
 
-			case 0 : printf("Pad1");
+			case 0 : printf("Pad1\n");
 				break;
 
-			case 1 : printf("PadN");
+			case 1 : printf("PadN\n");
 				break;
 
 			case 2 : if(tlv_len == 8) {
@@ -325,35 +325,35 @@ int printMsg(char * msg) {
 					printf("\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
 					printf("\tDestination_Id : %"PRIu64"\n", getHello_long_Destination_Id(tlv));
 				} else {
-					printf("Hello Inconnu");
+					printf("Hello Inconnu\n");
 				}
 				break;
 
-			case 3 : printf("Neighbour");
+			case 3 : printf("Neighbour\n");
 				break;
 
-			case 4 : printf("Data");
+			case 4 : printf("Data\n");
 				printf("\tSource : %"PRIu64"\n", getData_Sender_Id(tlv));
 				printf("\tNonce : %"PRIu32"\n", getData_Nonce(tlv));
 				printf("\tType : %"PRIu8"\n", getData_Type(tlv));
 				printf("\tDonnées : %s\n", getData_Donnees(tlv));
 				break;
 
-			case 5 : printf("Ack");
+			case 5 : printf("Ack\n");
 				printf("\tSource : %"PRIu64"\n", getAck_Sender_Id(tlv));
 				printf("\tNonce : %"PRIu32"\n", getAck_Nonce(tlv));
 				break;
 
-			case 6 : printf("GoAway");
+			case 6 : printf("GoAway\n");
 				printf("\tCode : %"PRIu8"\n", getGoAway_Code(tlv));
 				printf("\tMessage : %s\n", getGoAway_Message(tlv));
 				break;
 
-			case 7 : printf("Warning");
+			case 7 : printf("Warning\n");
 				printf("\tMessage : %s\n", getWarning_Message(tlv));
 				break;
 
-			default : printf("Inconnu");
+			default : printf("Inconnu\n");
 
 		}
 
@@ -361,7 +361,7 @@ int printMsg(char * msg) {
 
 	}
 
-	printf("I : %d\n",i);
+	printf("///////////////////////////////\n");
 
 	return 0;
 
