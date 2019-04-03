@@ -1,7 +1,7 @@
 #include "pair.h"
 #include "tlvFct.h"
 
-int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, int port) {//Ici socket non utilisee Normal ???
+int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, int port) {
 
 	char string_port[10];
 	snprintf(string_port,10,"%d",port);
@@ -140,24 +140,20 @@ int main() {
 		printf("Id = %" PRIu64 "\n", id);
 	}
 
-	//Fin de l'Initialisation
-
 	struct timeval tv;
 	fd_set readfds;
-	FD_ZERO(&readfds);
-	FD_SET(sock, &readfds);
+	
+	char hello_s[BUF_SIZE];
 
-	//On creer un msg hello court
+	int hello_s_len = createHello_short(hello_s, id);
+
+	//Fin de l'Initialisation
 
 	char sendMsg[BUF_SIZE], recvMsg[BUF_SIZE];
 
 	createMsg(sendMsg);
-	
-	char hello_s[BUF_SIZE];
 
-	int size = createHello_short(hello_s, id);
-
-	size = setMsg_Body(sendMsg, hello_s, size);
+	int size = setMsg_Body(sendMsg, hello_s, hello_s_len);
 
 	//On recupere l'adresse du Prof
 	struct sockaddr_in6 dest_addr;
@@ -166,17 +162,7 @@ int main() {
 
 	if(DEBUG && VUE) {
 		//On verifie les données
-
-		printf("Magic : %"PRIu8"\n", getMsg_Magic(sendMsg));
-		printf("Version : %"PRIu8"\n", getMsg_Version(sendMsg));
-		printf("Body_Length : %"PRIu16"\n", getMsg_Body_Length(sendMsg));
-	
-		char * tlv = getMsg_Tlv(sendMsg);
-
-		printf("Type : %"PRIu8"\n", getTlv_Type(tlv));
-		printf("Length : %"PRIu8"\n", getTlv_Length(tlv));
-		printf("Source_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
-
+		printMsg(sendMsg);
 	}
 
 	again:
@@ -192,9 +178,12 @@ int main() {
 		printf("Message Envoyé ! : %s\n",sendMsg);
 	}
 
-	//again2://TODO-> Plus Tard
+	again2:
 
-	tv.tv_sec  = 5;
+	FD_ZERO(&readfds);
+	FD_SET(sock, &readfds);
+
+	tv.tv_sec  = 180;
 	tv.tv_usec  = 0;
 
 	rc = select(sock + 1, &readfds, NULL, NULL, &tv);
@@ -230,21 +219,14 @@ int main() {
 	ok:
 
 	if(DEBUG) {
-		printf("Message Reçu ! : %s\n",recvMsg);
+		printf("Message Reçu ! : %s\n", recvMsg);
 	}
 
 	if(DEBUG) {
-		printf("Magic : %"PRIu8"\n", getMsg_Magic(recvMsg));
-		printf("Version : %"PRIu8"\n", getMsg_Version(recvMsg));
-		printf("Body_Length : %"PRIu16"\n", getMsg_Body_Length(recvMsg));
-	
-		char * newtlv = getMsg_Tlv(recvMsg);
-
-		printf("Type : %"PRIu8"\n", getTlv_Type(newtlv));
-		printf("Length : %"PRIu8"\n", getTlv_Length(newtlv));
+		printMsg(recvMsg);
 	}
 
-	goto ok;
+	goto again2;
 
 	close(sock);
 

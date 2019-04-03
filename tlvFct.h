@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <stdio.h>
 #define BUF_SIZE 4096
 
 /*Message*/
@@ -16,7 +17,7 @@ uint8_t getMsg_Version(char * msg);
 
 uint16_t getMsg_Body_Length(char * msg);
 
-char * getMsg_Tlv(char * msg);
+char * getMsg_Tlv(char * msg, uint8_t len);
 
 int setMsg_Body(char * msg, char * body, uint16_t len);
 
@@ -110,6 +111,10 @@ int createWarning(char * warning, char * message, int taille);
 char * getWarning_Message(char * warning);
 
 int getWarning_Message_Taille(char * warning);
+
+/*Global*/
+
+int printMsg(char * msg);
 
 
 #endif
