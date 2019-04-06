@@ -378,7 +378,7 @@ int printMsg(char * msg, struct ListVoisin * list_voisin) {
 				memset(tmp, 0, sizeof(struct ListVoisin));
 				
 				tmp = list_voisin;
-				while(tmp->id != 0){
+				while(tmp->suite != NULL){
 					tmp->suite = init_ListVoisin();
 					tmp = tmp->suite;
 				}
@@ -397,7 +397,7 @@ int printMsg(char * msg, struct ListVoisin * list_voisin) {
 				memcpy(tmp->date_long, date_long, strlen(date_long));
 		
 				printf("\t id de list_voisin : %"PRIu64"\n", list_voisin->id);
-				free(tmp);	
+				//free(tmp);	
 				printf("------------------------\n");
 				break;
 
