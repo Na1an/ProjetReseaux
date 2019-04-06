@@ -109,6 +109,25 @@ struct ListVoisinPotentiel * init_ListVoisinPotentiel() {
 	return lv;
 }
 
+struct ListVoisin * init_ListVoisin(){
+	
+	struct Voisin *	v = malloc(sizeof(struct Voisin));
+	memset(v, 0, sizeof(struct Voisin));
+	memset(&v->ip, 0, sizeof(v->ip));
+	memset(&v->port, 0, sizeof(v->port));
+
+	struct ListVoisin * lv = malloc(sizeof(struct ListVoisin));
+	memset(lv, 0, sizeof(struct ListVoisin));
+	lv->voisin = v;
+	lv->id = 0;
+	memset(lv->date, 0, 30);
+	memset(lv->date_long, 0, 30);
+	//memset(&lv->suite, 0, sizeof(struct ListVoisin));
+	lv->suite = NULL;
+
+	return lv;
+}
+
 int get_voisin_addr(struct Voisin * v, struct sockaddr_in6 *addr) {
 
 	memset(addr, 0, sizeof(*addr));
@@ -123,6 +142,7 @@ int get_voisin_addr(struct Voisin * v, struct sockaddr_in6 *addr) {
 int main() {
 
 	int sock, rc;
+	struct ListVoisin * list_voisin = init_ListVoisin();
 
 	set_addr_pair(&sock);
 
@@ -162,7 +182,7 @@ int main() {
 
 	if(DEBUG && VUE) {
 		//On verifie les données
-		printMsg(sendMsg);
+		printMsg(sendMsg, list_voisin);
 	}
 
 	again:
@@ -223,7 +243,7 @@ int main() {
 	}
 
 	if(DEBUG) {
-		printMsg(recvMsg);
+		printMsg(recvMsg, list_voisin);
 	}
 
 	goto again2;

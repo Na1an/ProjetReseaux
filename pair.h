@@ -28,6 +28,7 @@
 #define PROF_PORT 1212
 #define PROF_ADDR "jch.irif.fr"
 
+/*
 struct Voisin {
 	struct in6_addr ip;
 	in_port_t port;
@@ -41,8 +42,11 @@ struct ListVoisinPotentiel {
 struct ListVoisin {
 	struct Voisin * voisin;
 	uint64_t id;
-	//...
+	char date[26];
+	char date_long[26];
 	struct ListVoisin * suite;
 };
+*/
 
+struct ListVoisin * init_ListVoisin();
 #endif

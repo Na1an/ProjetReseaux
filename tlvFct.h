@@ -1,11 +1,35 @@
 #ifndef TLVFCT_H
 #define TLVFCT
 
+#include <time.h>
 #include <inttypes.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <stdio.h>
 #define BUF_SIZE 4096
+
+/*struct*/
+struct Voisin {
+	struct in6_addr ip;
+	in_port_t port;
+};
+
+struct ListVoisinPotentiel {
+	struct Voisin * voisin;
+	struct ListVoisinPotentiel * suite;
+};
+
+struct ListVoisin {
+	struct Voisin * voisin;
+	uint64_t id;
+	char date[30];
+	char date_long[30];
+	struct ListVoisin * suite;
+};
+/*type define*/
+
+typedef __int128 int128_t;
+//typedef __uint128 uint128_t;
 
 /*Message*/
 
@@ -114,7 +138,7 @@ int getWarning_Message_Taille(char * warning);
 
 /*Global*/
 
-int printMsg(char * msg);
+int printMsg(char * msg, struct ListVoisin * list_voisin);
 
 
 #endif
