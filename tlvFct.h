@@ -9,26 +9,26 @@
 #define BUF_SIZE 4096
 
 /*struct*/
-struct Voisin {
+/*struct Voisin {//Index
 	struct in6_addr ip;
 	in_port_t port;
 };
 
-struct ListVoisinPotentiel {
+struct ListVoisinPotentiel {//VoisinPot
 	struct Voisin * voisin;
 	struct ListVoisinPotentiel * suite;
 };
 
-struct ListVoisin {
+struct ListVoisin {//Voisin
 	struct Voisin * voisin;
 	uint64_t id;
 	char date[30];
 	char date_long[30];
 	struct ListVoisin * suite;
-};
+};*/
 /*type define*/
 
-typedef __int128 int128_t;
+typedef __int128 int128_t;//??
 //typedef __uint128 uint128_t;
 
 /*Message*/
@@ -138,7 +138,7 @@ int getWarning_Message_Taille(char * warning);
 
 /*Global*/
 
-int printMsg(char * msg, struct ListVoisin * list_voisin);
+int printMsg(char * msg);
 
 
 #endif

@@ -142,13 +142,13 @@ int createNeighbour(char * neigbour, struct in6_addr ip, in_port_t port) {
 	return len+TLV_ENTETE;
 }
 
-int getNeighbour_Ip2(char * neighbour, struct in6_addr * ip) {
+int getNeighbour_Ip(char * neighbour, struct in6_addr * ip) {//Rq : ip = ip->s6_addr
 	memset(ip, 0, 16);
 	memcpy(ip, neighbour+2, 16);
 	return 16;
 }
 
-int getNeighbour_Ip(char * neighbour, struct in6_addr * ip, char * res) {
+int getNeighbour_Ip2(char * neighbour, struct in6_addr * ip, char * res) {
 	memset(ip, 0, 16);
 	
 	char str1[16]; //copy la chaine
@@ -300,13 +300,13 @@ int getWarning_Message_Taille(char * warning) {
 
 /*Global*/
 
-int printMsg(char * msg, struct ListVoisin * list_voisin) {
+int printMsg(char * msg) {
 
 	time_t timep;
 	time(&timep);
-	//printf("%s", asctime(gmtime(&timep)));
+	/*//printf("%s", asctime(gmtime(&timep)));
 	char * date_short = 0;//[26];
-	char * date_long = 0;//[26];
+	char * date_long = 0;//[26];*/
 
 	printf("Magic : %"PRIu8"\n", getMsg_Magic(msg));
 	printf("Version : %"PRIu8"\n", getMsg_Version(msg));
@@ -319,7 +319,7 @@ int printMsg(char * msg, struct ListVoisin * list_voisin) {
 
 	int i = 0;
 	
-	uint64_t source_id = 0;
+	//uint64_t source_id = 0;
 	while(i < body_len) {
 
 		tlv = getMsg_Tlv(msg, i);
@@ -336,43 +336,38 @@ int printMsg(char * msg, struct ListVoisin * list_voisin) {
 
 		switch(type) {
 
-			case 0 : printf("Pad1\n");
+			case 0 : 
+				printf("=>\nPad1\n");
 				break;
 
-			case 1 : printf("PadN\n");
+			case 1 : 
+				printf("=>\nPadN\n");
 				break;
 
-			case 2 : if(tlv_len == 8) {
-					printf("Hello_short :\n");
-					source_id =  getHello_Source_Id(tlv);
-					printf("\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
-					date_short = asctime(gmtime(&timep));
-					printf("date_short : %s\n", date_short);
-					//printf("sizeofdate : %d \n", strlen(date_short));=25
+			case 2 : 
+				if(tlv_len == 8) {
+					printf("{\n\tHello_short :\n");
+					printf("\t\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
+					printf("\t\tDate : %s", asctime(gmtime(&timep)));
 				 } else if(tlv_len == 16) {
-					printf("Hello_long :\n");
-					source_id =  getHello_Source_Id(tlv);	
-					printf("\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
-					printf("\tDestination_Id : %"PRIu64"\n", getHello_long_Destination_Id(tlv));
-					date_long = asctime(gmtime(&timep));
-					printf("date_long : %s\n", date_long);
+					printf("{\n\tHello_long :\n");
+					printf("\t\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
+					printf("\t\tDestination_Id : %"PRIu64"\n", getHello_long_Destination_Id(tlv));
+					printf("\t\tDate : %s", asctime(gmtime(&timep)));
 				 } else {
-					printf("Hello Inconnu\n");	
+					printf("{\n\tHello Inconnu\n");	
 				 }
 				 break;
 
 			case 3 : 
-				printf("------------------------\n");	
-				printf("Neighbour\n");
+				printf("{\n\tNeighbour\n");
 				struct in6_addr ip;
-				memset(&ip, 0, sizeof(ip));
-				char res[16];
-				getNeighbour_Ip(tlv, &ip,res);
+				getNeighbour_Ip(tlv, &ip);
 				in_port_t port = getNeighbour_Port(tlv);
-				printf("\t Neightbour IP : %s\n", res);
-				printf("\t NeighbourPort : %"PRIu16"\n", port);
+				printf("\t\tIP : %s\n", ip.s6_addr);
+				printf("\t\tPort : %"PRIu16"\n", port);
 				
-				//put the Neighbour in the NeightbourList
+				/*//put the Neighbour in the NeightbourList
 				
 				struct ListVoisin * tmp = malloc(sizeof(struct ListVoisin));
 				memset(tmp, 0, sizeof(struct ListVoisin));
@@ -385,52 +380,52 @@ int printMsg(char * msg, struct ListVoisin * list_voisin) {
 				
 				tmp->voisin->ip = ip;
 				tmp->voisin->port = port;
-				tmp->id = source_id;
+				tmp->id = source_id;//NON !?
 
-				printf("\t Neightbour Source_Id : %"PRIu64"\n", tmp->id);
+				printf("\t\tSource_Id : %"PRIu64"\n", tmp->id);
 				date_short = asctime(gmtime(&timep));
-				printf("\t date_short :%s \n", date_short);
+				printf("\t\tDate_Short : %s", date_short);
 				memcpy(tmp->date, date_short, strlen(date_short));
 			      	
 				date_long = asctime(gmtime(&timep));
-				printf("\t date_long :%s \n", date_long);
+				printf("\t\tDate_Long : %s", date_long);
 				memcpy(tmp->date_long, date_long, strlen(date_long));
 		
-				printf("\t id de list_voisin : %"PRIu64"\n", list_voisin->id);
-				//free(tmp);	
-				printf("------------------------\n");
+				//printf("\t\tid de list_voisin : %"PRIu64"\n", list_voisin->id);
+				//free(tmp);*/	
 				break;
 
-			case 4 : printf("Data\n");
-				printf("\tSource : %"PRIu64"\n", getData_Sender_Id(tlv));
-				printf("\tNonce : %"PRIu32"\n", getData_Nonce(tlv));
-				printf("\tType : %"PRIu8"\n", getData_Type(tlv));
-				printf("\tDonnées : %s\n", getData_Donnees(tlv));
+			case 4 : printf("{\n\tData\n");
+				printf("\t\tSource : %"PRIu64"\n", getData_Sender_Id(tlv));
+				printf("\t\tNonce : %"PRIu32"\n", getData_Nonce(tlv));
+				printf("\t\tType : %"PRIu8"\n", getData_Type(tlv));
+				printf("\t\tDonnées : %s\n", getData_Donnees(tlv));
 				break;
 
-			case 5 : printf("Ack\n");
-				printf("\tSource : %"PRIu64"\n", getAck_Sender_Id(tlv));
-				printf("\tNonce : %"PRIu32"\n", getAck_Nonce(tlv));
+			case 5 : printf("{\n\tAck\n");
+				printf("\t\tSource : %"PRIu64"\n", getAck_Sender_Id(tlv));
+				printf("\t\tNonce : %"PRIu32"\n", getAck_Nonce(tlv));
 				break;
 
-			case 6 : printf("GoAway\n");
-				printf("\tCode : %"PRIu8"\n", getGoAway_Code(tlv));
-				printf("\tMessage : %s\n", getGoAway_Message(tlv));
+			case 6 : printf("{\n\tGoAway\n");
+				printf("\t\tCode : %"PRIu8"\n", getGoAway_Code(tlv));
+				printf("\t\tMessage : %s\n", getGoAway_Message(tlv));
 				break;
 
-			case 7 : printf("Warning\n");
-				printf("\tMessage : %s\n", getWarning_Message(tlv));
+			case 7 : printf("{\n\tWarning\n");
+				printf("\t\tMessage : %s\n", getWarning_Message(tlv));
 				break;
 
-			default : printf("Inconnu\n");
+			default : printf("{\n\tInconnu\n");
 
 		}
+
+		printf("}\n");
 
 		i += (tlv_len+TLV_ENTETE);
 
 	}
-	printf("time : %s \n", asctime(gmtime(&timep)));
-	printf("len : %ld \n", strlen(asctime(gmtime(&timep))));
+	printf("\nTime : %s \n", asctime(gmtime(&timep)));
 
 	printf("///////////////////////////////\n");
 

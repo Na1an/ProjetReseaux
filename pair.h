@@ -48,5 +48,5 @@ struct ListVoisin {
 };
 */
 
-struct ListVoisin * init_ListVoisin();
+//struct ListVoisin * init_ListVoisin();
 #endif

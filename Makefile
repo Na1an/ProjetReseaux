@@ -9,14 +9,13 @@ ALL = pair
 
 all : $(ALL)
 
-multicast: multicast.o
-multicast.o: multicast.h multicast.c
+list.o : list.c list.h
 
 tlvFct.o : tlvFct.c tlvFct.h
 
 pair.o : pair.c pair.h tlvFct.h
 
-pair : tlvFct.o pair.o
+pair : list.o tlvFct.o pair.o
 
 cleanall:
 	rm -rf *~ $(ALL)
