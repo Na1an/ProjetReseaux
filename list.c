@@ -61,12 +61,12 @@ int main() {
 
 	struct Donnee * d1 = malloc(sizeof(struct Donnee));
 	memset(d1, 0, sizeof(struct Donnee));
-	d1->donnees = "Donnée 1";
+	d1->data = "Donnée 1";
 	d1->l = lv1;
 
 	struct Donnee * d2 = malloc(sizeof(struct Donnee));
 	memset(d2, 0, sizeof(struct Donnee));
-	d2->donnees = "Donnée 2";
+	d2->data = "Donnée 2";
 	d2->l = lv2;
 
 	/ Create List Circulaire /
@@ -87,7 +87,7 @@ int main() {
 		printf("Data %d :\n", i);
 		d = (struct Donnee *)l->objet;
 		if(d != NULL) {
-			printf("\tDonnées : %s\n", d->donnees);
+			printf("\tDonnées : %s\n", d->data);
 			printList(d->l);
 		} else {
 			printf("\tPas de Données\n");

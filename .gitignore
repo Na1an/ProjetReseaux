@@ -1,0 +1,11 @@
+#Ignorer :
+# Les fichiers Auxiliaires .o
+*.o
+# Le fichier compiler
+pair
+
+# Les fichiers personnels de Yuchen
+
+
+# Les fichiers personnels de Sébastien
+open.sh

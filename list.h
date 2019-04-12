@@ -31,10 +31,14 @@
 
 /* Structures */
 
+/*List en Général*/
+
 struct List {
 	void * objet;
 	struct List * suite;
 };
+
+/*Voisins*/
 
 struct Index_Voisin {
 	struct in6_addr ip;
@@ -43,10 +47,20 @@ struct Index_Voisin {
 
 struct Voisin {
 	struct Index_Voisin index;
+	uint64_t id;
+	char date[26];
+	char date_long[26];
+};
+
+/*Données*/
+
+struct Index_Donnee {
+	uint64_t id;
+	uint32_t nonce;
 };
 
 struct Donnee {
-	char * donnees;
+	struct Index_Donnee index;
 	struct List * l;
 };
 
@@ -56,7 +70,7 @@ struct List * add_List(void * ob, struct List * list);
 
 struct List * add_Circ_List(void * ob, struct List * list);
 
-struct List * build_Circ_List(int size);
+struct List * create_Circ_List(int size);
 
 
 #endif

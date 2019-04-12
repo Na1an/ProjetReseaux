@@ -17,10 +17,7 @@ int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, 
 	hints.ai_flags = AI_V4MAPPED | AI_ALL;
 	hints.ai_protocol = 0;
 
-	if ((getaddrinfo(pair, string_port, &hints, &r)) != 0 || NULL == r) {
-		perror("getaddrinfo");
-		return -1;
-	}
+	if ((getaddrinfo(pair, string_port, &hints, &r)) != 0 || NULL == r) {perror("getaddrinfo");return -1;}
 
 	/* Init sock */
 	for (
@@ -29,14 +26,9 @@ int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, 
 		p = p->ai_next
 	);
 
-	if (NULL == p) {
-		perror("create socket");
-		return -2;
-	}
+	if (NULL == p) {perror("create socket");return -2;}
 
-	if(DEBUG) {
-		printf("sock : %d\n", *sock);
-	}
+	if(DEBUG) {printf("sock : %d\n", *sock);}
 
 	/* Init addr */
 	*addr = *((struct sockaddr_in6*) p->ai_addr);
@@ -167,6 +159,10 @@ int main() {
 
 	int sock, rc;
 	struct List * list_voisin_potentiel = add_List(premier_Voisin(), NULL);
+	struct List * list_voisin = NULL;
+	struct List * list_voisin_symetrique = NULL;//Utile ???
+
+	struct List * list_data = create_Circ_List(8);
 
 	set_addr_pair(&sock);
 
@@ -274,14 +270,12 @@ int main() {
 
 	if(premier == 0) {
 		premier++;
-		if(fork() == 0) {
-			uint64_t idProf = getHello_Source_Id(getMsg_Tlv(recvMsg, 0));
+		if(fork() == 0) {//LORSQUE L ON RECOIS LE PREMIER HELLO_LONG DU PROF, ON LUI ENVOIE UN HELLO_LONG TOUTES LES 30 SEC
+			uint64_t idProf = getHello_Source_Id(getMsg_Tlv(recvMsg, 0));//Id du Prof
 
-			char hello_l[BUF_SIZE];
+			char monhellolong[BUF_SIZE], hello_l[BUF_SIZE];
 
 			int hello_l_len = createHello_long(hello_l, id, idProf);
-
-			char monhellolong[BUF_SIZE];
 
 			createMsg(monhellolong);
 
@@ -289,7 +283,7 @@ int main() {
 
 			struct timeval mon_tv;
 
-			ici:
+			encore_long:
 
 			mon_tv.tv_sec  = 30;
 			mon_tv.tv_usec  = 0;
@@ -311,7 +305,7 @@ int main() {
 				}
 				printf("Message LONG Envoyé ! : %s\n",sendMsg);
 			}
-			goto ici;
+			goto encore_long;
 
 		}
 	}

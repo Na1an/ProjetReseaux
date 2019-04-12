@@ -9,6 +9,31 @@
 #define BUF_SIZE 4096
 
 /*struct*/
+
+
+/*
+struct Voisin {
+	struct in6_addr ip;
+	in_port_t port;
+};
+
+struct ListVoisinPotentiel {
+	struct Voisin * voisin;
+	struct ListVoisinPotentiel * suite;
+};
+
+struct ListVoisin {
+	struct Voisin * voisin;
+	uint64_t id;
+	char date[26];
+	char date_long[26];
+	struct ListVoisin * suite;
+};
+*/
+
+//struct ListVoisin * init_ListVoisin();
+
+
 /*struct Voisin {//Index
 	struct in6_addr ip;
 	in_port_t port;
@@ -28,7 +53,7 @@ struct ListVoisin {//Voisin
 };*/
 /*type define*/
 
-typedef __int128 int128_t;//??
+//typedef __int128 int128_t;//??
 //typedef __uint128 uint128_t;
 
 /*Message*/
