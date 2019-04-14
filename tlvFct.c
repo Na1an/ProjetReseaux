@@ -1,10 +1,6 @@
 #include "tlvFct.h"
-#include "pair.h"
 
 /*Message*/
-
-int MSG_ENTETE = 4;
-int TLV_ENTETE = 2;
 
 int createMsg(char * msg) {
 	memset(msg, 0, BUF_SIZE);
@@ -39,6 +35,7 @@ char * getMsg_Tlv(char * msg, uint8_t len) {
 
 int setMsg_Body(char * msg, char * body, uint16_t len) {
 	uint16_t l = ntohs(getMsg_Body_Length(msg));
+	if(l+len+MSG_ENTETE > BUF_SIZE) return -1;
 	memcpy(msg+4+l, body, len);
 	l += len;
 	uint16_t h = htons(l);
@@ -83,7 +80,7 @@ int createPadN(char * pad, uint8_t len) {
 	uint8_t type = 0x1;//1;
 	memcpy(pad, &type, 1);
 	memcpy(pad+1, &len, 1);
-	return TLV_ENTETE;
+	return TLV_ENTETE+len;
 }
 
 
@@ -142,13 +139,14 @@ int createNeighbour(char * neigbour, struct in6_addr ip, in_port_t port) {
 	return len+TLV_ENTETE;
 }
 
-int getNeighbour_Ip(char * neighbour, struct in6_addr * ip) {//Rq : ip = ip->s6_addr
+//Remarque : ip = ip->s6_addr
+int getNeighbour_Ip(char * neighbour, struct in6_addr * ip) {
 	memset(ip, 0, 16);
 	memcpy(ip, neighbour+2, 16);
 	return 16;
 }
 
-int getNeighbour_Ip2(char * neighbour, struct in6_addr * ip, char * res) {
+/*int getNeighbour_Ip2(char * neighbour, struct in6_addr * ip, char * res) {
 	memset(ip, 0, 16);
 	
 	char str1[16]; //copy la chaine
@@ -163,7 +161,7 @@ int getNeighbour_Ip2(char * neighbour, struct in6_addr * ip, char * res) {
 	printf("ip->s6_addr : %s \n", ip->s6_addr);
 	inet_ntop(AF_INET6, ip, res, 16);
 	return 1;	
-}
+}*/
 
 in_port_t getNeighbour_Port(char * neighbour) {
 	in_port_t port;
@@ -300,7 +298,7 @@ int getWarning_Message_Taille(char * warning) {
 
 /*Global*/
 
-int printMsg(char * msg) {
+int printMsg(char * msg) {/* TODO -> Améliorer : Attention au taille, magic, version, ...*/
 
 	time_t timep;
 	time(&timep);
@@ -315,12 +313,14 @@ int printMsg(char * msg) {
 
 	printf("Body_Length : %"PRIu16"\n", body_len);
 
-	char * tlv; uint8_t type; uint8_t tlv_len;
+	char * tlv; uint8_t type; uint8_t tlv_len; char txt[BUF_SIZE];
 
 	int i = 0;
 	
 	//uint64_t source_id = 0;
 	while(i < body_len) {
+
+		memset(txt, 0, BUF_SIZE);
 
 		tlv = getMsg_Tlv(msg, i);
 
@@ -367,7 +367,7 @@ int printMsg(char * msg) {
 				printf("\t\tIP : %s\n", ip.s6_addr);
 				printf("\t\tPort : %"PRIu16"\n", port);
 				
-				/*//put the Neighbour in the NeightbourList
+				/*//put the Neighbour in the NeighbourList
 				
 				struct ListVoisin * tmp = malloc(sizeof(struct ListVoisin));
 				memset(tmp, 0, sizeof(struct ListVoisin));
@@ -395,28 +395,36 @@ int printMsg(char * msg) {
 				//free(tmp);*/	
 				break;
 
-			case 4 : printf("{\n\tData\n");
+			case 4 : 
+				printf("{\n\tData\n");
 				printf("\t\tSource : %"PRIu64"\n", getData_Sender_Id(tlv));
 				printf("\t\tNonce : %"PRIu32"\n", getData_Nonce(tlv));
 				printf("\t\tType : %"PRIu8"\n", getData_Type(tlv));
-				printf("\t\tDonnées : %s\n", getData_Donnees(tlv));
+				memcpy(txt, getData_Donnees(tlv), getData_Donnees_Taille(tlv));
+				printf("\t\tDonnées : %s\n", txt);
 				break;
 
-			case 5 : printf("{\n\tAck\n");
+			case 5 : 
+				printf("{\n\tAck\n");
 				printf("\t\tSource : %"PRIu64"\n", getAck_Sender_Id(tlv));
 				printf("\t\tNonce : %"PRIu32"\n", getAck_Nonce(tlv));
 				break;
 
-			case 6 : printf("{\n\tGoAway\n");
+			case 6 : 
+				printf("{\n\tGoAway\n");
 				printf("\t\tCode : %"PRIu8"\n", getGoAway_Code(tlv));
-				printf("\t\tMessage : %s\n", getGoAway_Message(tlv));
+				memcpy(txt, getGoAway_Message(tlv), getGoAway_Message_Taille(tlv));
+				printf("\t\tMessage : %s\n", txt);
 				break;
 
-			case 7 : printf("{\n\tWarning\n");
-				printf("\t\tMessage : %s\n", getWarning_Message(tlv));
+			case 7 : 
+				printf("{\n\tWarning\n");
+				memcpy(txt, getWarning_Message(tlv), getWarning_Message_Taille(tlv));
+				printf("\t\tMessage : %s\n", txt);
 				break;
 
-			default : printf("{\n\tInconnu\n");
+			default : 
+				printf("{\n\tInconnu\n");
 
 		}
 

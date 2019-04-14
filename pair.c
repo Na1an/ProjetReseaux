@@ -2,12 +2,12 @@
 #include "tlvFct.h"
 #include "list.h"
 
-int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, int port) {
+struct Index_Voisin * premier_Voisin() {
+
+	int sock;
 
 	char string_port[10];
-	snprintf(string_port,10,"%d",port);
-
-	memset(addr, 0, sizeof(struct sockaddr_in6));
+	snprintf(string_port, 10, "%d", PROF_PORT);
 
 	struct addrinfo hints, *r, *p;
 
@@ -17,32 +17,49 @@ int get_socket_and_pair_addr(int *sock, struct sockaddr_in6 *addr, char * pair, 
 	hints.ai_flags = AI_V4MAPPED | AI_ALL;
 	hints.ai_protocol = 0;
 
-	if ((getaddrinfo(pair, string_port, &hints, &r)) != 0 || NULL == r) {perror("getaddrinfo");return -1;}
+	if ((getaddrinfo(PROF_ADDR, string_port, &hints, &r)) != 0 || NULL == r) {
+		perror("getaddrinfo");
+		fprintf(stderr, "Error: Find host.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	/* Init sock */
 	for (
 		p = r;
-		((NULL != p) && ((*sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0));
+		((NULL != p) && ((sock = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0));
 		p = p->ai_next
 	);
 
-	if (NULL == p) {perror("create socket");return -2;}
+	if (NULL == p) {
+		perror("create socket");
+		fprintf(stderr, "Error: Creat sock.\n");
+		exit(EXIT_FAILURE);
+	}
 
-	if(DEBUG) {printf("sock : %d\n", *sock);}
+	if(DEBUG) {
+		printf("sock : %d\n", sock);
+	}
 
-	/* Init addr */
-	*addr = *((struct sockaddr_in6*) p->ai_addr);
+	/* Init Voisin */
+
+	struct Index_Voisin * iv = malloc(sizeof(struct Index_Voisin));
+	memset(iv, 0, sizeof(struct Index_Voisin));
+
+	iv->ip = ((struct sockaddr_in6*) p->ai_addr)->sin6_addr;
+	iv->port = ((struct sockaddr_in6*) p->ai_addr)->sin6_port;
+
+	close(sock);
 
 	freeaddrinfo(r);
 
-	return 0;
+	return iv;
 }
 
-int set_addr_pair(int *sock) {
+int set_addr_pair() {
 
-	int rc;
+	int sock, rc;
 
-	*sock = socket(AF_INET6, SOCK_DGRAM, 0);
+	sock = socket(AF_INET6, SOCK_DGRAM, 0);
 
 	struct sockaddr_in6 server;
 
@@ -55,21 +72,21 @@ int set_addr_pair(int *sock) {
 	int val_0 = 0;
 	int val_1 = 1;
 	
-	rc = setsockopt(*sock, SOL_SOCKET, SO_REUSEADDR, &val_1, sizeof(val_1));
+	rc = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &val_1, sizeof(val_1));
 	if(rc < 0) {
 		perror("setsockopt - SOL_REUSEADDR");
 		fprintf(stderr, "Error: Set Option.\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	rc = setsockopt(*sock, IPPROTO_IPV6, IPV6_V6ONLY, &val_0, sizeof(val_0));
+	rc = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &val_0, sizeof(val_0));
 	if(rc < 0) {
 		perror("setsockopt - IPV6_V6ONLY");
 		fprintf(stderr, "Error: Set Option.\n");
 		exit(EXIT_FAILURE);
 	}
 
-	return 0;
+	return sock;
 }
 
 //MEMOIRE ALOUEE POUR ListVoisin ET TOUS SES Voisin !!
@@ -121,36 +138,130 @@ struct ListVoisin * init_ListVoisin(){
 	return lv;
 }*/
 
-struct Voisin * premier_Voisin() {
-	int s;
-	struct sockaddr_in6 p;
-
-	switch (get_socket_and_pair_addr(&s, &p, PROF_ADDR, PROF_PORT)) {
-		case -1:
-			fprintf(stderr, "Error: Find host.\n");
-			exit(EXIT_FAILURE);
-		case -2:
-			fprintf(stderr, "Error: Creat sock.\n");
-			exit(EXIT_FAILURE);
-	}
-
-	close(s);
-
-	struct Voisin *	v = malloc(sizeof(struct Voisin));
-	memset(v, 0, sizeof(struct Voisin));
-	(v->index).ip = p.sin6_addr;
-	(v->index).port = p.sin6_port;
-
-	return v;
-}
-
-int get_voisin_addr(struct Voisin * v, struct sockaddr_in6 *addr) {
+int get_voisin_addr(struct Index_Voisin * iv, struct sockaddr_in6 *addr) {
 
 	memset(addr, 0, sizeof(*addr));
 
 	addr->sin6_family = AF_INET6;
-	addr->sin6_port = v->index.port;
-	addr->sin6_addr = v->index.ip;
+	addr->sin6_port = iv->port;
+	addr->sin6_addr = iv->ip;
+
+	return 0;
+}
+
+int traitement(char * msg) {
+
+	time_t timep;
+	time(&timep);
+	/*//printf("%s", asctime(gmtime(&timep)));
+	char * date_short = 0;//[26];
+	char * date_long = 0;//[26];*/
+
+	uint16_t body_len = getMsg_Body_Length(msg);
+
+	char * tlv; uint8_t type; uint8_t tlv_len; char txt[BUF_SIZE];
+
+	int i = 0;
+	
+	//uint64_t source_id = 0;
+	while(i < body_len) {
+
+		memset(txt, 0, BUF_SIZE);
+
+		tlv = getMsg_Tlv(msg, i);
+
+		type = getTlv_Type(tlv);
+
+		tlv_len = getTlv_Length(tlv);
+
+		printf("Tlv_Type : %"PRIu8"\n", type);
+
+		tlv_len = getTlv_Length(tlv);
+
+		printf("Tlv_Length : %"PRIu8"\n", tlv_len);
+
+		switch(type) {
+
+			case 0 : //Pad1 : Rien
+				break;
+
+			case 1 : //PadN : Rien
+				break;
+
+			case 2 : //Hello
+				if(tlv_len == 8) {
+					
+				} else if(tlv_len == 16) {
+					
+				} else {
+					
+				}
+				break;//TODO FAIRE des clear de Malloc -> list, voisin, data ,index -> ensuite : Neightbour TODO
+
+			case 3 : //Neighbour
+				//struct in6_addr ip;
+				//getNeighbour_Ip(tlv, &ip);
+				//in_port_t port = getNeighbour_Port(tlv);
+				
+				/*//put the Neighbour in the NeightbourList
+				
+				struct ListVoisin * tmp = malloc(sizeof(struct ListVoisin));
+				memset(tmp, 0, sizeof(struct ListVoisin));
+				
+				tmp = list_voisin;
+				while(tmp->suite != NULL){
+					tmp->suite = init_ListVoisin();
+					tmp = tmp->suite;
+				}
+				
+				tmp->voisin->ip = ip;
+				tmp->voisin->port = port;
+				tmp->id = source_id;//NON !?
+
+				printf("\t\tSource_Id : %"PRIu64"\n", tmp->id);
+				date_short = asctime(gmtime(&timep));
+				printf("\t\tDate_Short : %s", date_short);
+				memcpy(tmp->date, date_short, strlen(date_short));
+			      	
+				date_long = asctime(gmtime(&timep));
+				printf("\t\tDate_Long : %s", date_long);
+				memcpy(tmp->date_long, date_long, strlen(date_long));
+		
+				//printf("\t\tid de list_voisin : %"PRIu64"\n", list_voisin->id);
+				//free(tmp);*/	
+				break;
+
+			case 4 : //Data
+				break;
+
+			case 5 : //Ack : 
+				break;
+
+			case 6 : 
+				if(VUE) {
+					memcpy(txt, getGoAway_Message(tlv), getGoAway_Message_Taille(tlv));
+					printf("GoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(tlv), txt);
+				}
+				break;
+
+			case 7 : 
+				if(VUE) {
+					memcpy(txt, getWarning_Message(tlv), getWarning_Message_Taille(tlv));
+					printf("Warning : %s\n", txt);
+				}
+				break;
+
+			default : 
+				if(VUE) {
+					printf("Inconnu");
+				}
+
+		}
+
+		i += (tlv_len+TLV_ENTETE);
+
+	}
+	printf("\nTime : %s \n", asctime(gmtime(&timep)));
 
 	return 0;
 }
@@ -158,13 +269,14 @@ int get_voisin_addr(struct Voisin * v, struct sockaddr_in6 *addr) {
 int main() {
 
 	int sock, rc;
+
 	struct List * list_voisin_potentiel = add_List(premier_Voisin(), NULL);
 	struct List * list_voisin = NULL;
 	struct List * list_voisin_symetrique = NULL;//Utile ???
 
 	struct List * list_data = create_Circ_List(8);
 
-	set_addr_pair(&sock);
+	sock = set_addr_pair();
 
 	//struct ListVoisinPotentiel * potentiels = init_ListVoisinPotentiel();
 
@@ -190,6 +302,8 @@ int main() {
 	//Fin de l'Initialisation
 
 	char sendMsg[BUF_SIZE], recvMsg[BUF_SIZE];
+	memset(sendMsg, 0, BUF_SIZE);
+	memset(recvMsg, 0, BUF_SIZE);
 
 	createMsg(sendMsg);
 
@@ -197,10 +311,10 @@ int main() {
 
 	//On recupere l'adresse du Prof
 	struct sockaddr_in6 dest_addr;
-	get_voisin_addr((struct Voisin *)list_voisin_potentiel->objet, &dest_addr);
+	get_voisin_addr((struct Index_Voisin *)list_voisin_potentiel->objet, &dest_addr);
 
 
-	if(DEBUG && VUE) {
+	if(DEBUG) {
 		//On verifie les données
 		printMsg(sendMsg);
 	}
@@ -273,6 +387,8 @@ int main() {
 		if(fork() == 0) {//LORSQUE L ON RECOIS LE PREMIER HELLO_LONG DU PROF, ON LUI ENVOIE UN HELLO_LONG TOUTES LES 30 SEC
 			uint64_t idProf = getHello_Source_Id(getMsg_Tlv(recvMsg, 0));//Id du Prof
 
+			printf("Id Prof : %"PRIu64"\n", idProf);
+
 			char monhellolong[BUF_SIZE], hello_l[BUF_SIZE];
 
 			int hello_l_len = createHello_long(hello_l, id, idProf);
@@ -310,7 +426,15 @@ int main() {
 		}
 	}
 
+	memset(recvMsg, 0, BUF_SIZE);
+
 	goto again2;
+
+	clear_List(list_voisin_potentiel, (f_obj)&clear_Index_Voisin);
+	clear_List(list_voisin, (f_obj)&clear_Voisin);
+	clear_List(list_voisin_symetrique, (f_obj)&clear_Voisin);
+
+	clear_List(list_data, (f_obj)&clear_Donnee);
 
 	close(sock);
 

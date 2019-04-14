@@ -9,11 +9,11 @@ ALL = pair
 
 all : $(ALL)
 
-list.o : list.c list.h
+list.o : include.h list.h list.c
 
-tlvFct.o : tlvFct.c tlvFct.h
+tlvFct.o : include.h tlvFct.h tlvFct.c
 
-pair.o : pair.c pair.h tlvFct.h
+pair.o : include.h tlvFct.h list.h pair.h pair.c
 
 pair : list.o tlvFct.o pair.o
 

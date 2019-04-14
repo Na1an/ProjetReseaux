@@ -1,5 +1,7 @@
 #include "list.h"
 
+/* Générer */
+
 struct List * add_List(void * ob, struct List * list) {
 	struct List * l = malloc(sizeof(struct List));
 	memset(l, 0, sizeof(struct List));
@@ -28,75 +30,56 @@ struct List * create_Circ_List(int size) {
 	return l;
 }
 
-/*Juste Un Test*/
-/*int printList(struct List * l) {
+/* Egalité */
 
+int eqIVoisin(struct Index_Voisin * v1, struct Index_Voisin * v2) {
+	return (v1->port == v2->port) && (memcmp((v1->ip).s6_addr, (v2->ip).s6_addr, 16) == 0);
+}
+
+int eqIDonnee(struct Index_Donnee * d1, struct Index_Donnee * d2) {
+	return (d1->id == d2->id) && (d1->nonce == d2->nonce);
+}
+
+/* Clear */
+
+int clear_List(struct List * l, f_obj clearObjet) {
 	if(l != NULL) {
-		if(l->objet != NULL) {printf("%d\n", ((struct Voisin *)l->objet)->a);}
-		printList(l->suite);
+		clearObjet(l->objet);
+		clear_List(l->suite, clearObjet);
+		free(l);
 	}
-	
-	return 0;
-}*/
-
-/*
-int main() {
-
-	/ Create Voisin /
-
-	struct Voisin * v1 = malloc(sizeof(struct Voisin));
-	memset(v1, 0, sizeof(struct Voisin));
-	v1->a = 3;
-
-	struct Voisin * v2 = malloc(sizeof(struct Voisin));
-	memset(v2, 0, sizeof(struct Voisin));
-	v2->a = 7;
-
-	/ Create List /
-
-	struct List * lv2 = add_List(v2, NULL);
-	struct List * lv1 = add_List(v1, lv2);
-
-	/ Create Donnee /
-
-	struct Donnee * d1 = malloc(sizeof(struct Donnee));
-	memset(d1, 0, sizeof(struct Donnee));
-	d1->data = "Donnée 1";
-	d1->l = lv1;
-
-	struct Donnee * d2 = malloc(sizeof(struct Donnee));
-	memset(d2, 0, sizeof(struct Donnee));
-	d2->data = "Donnée 2";
-	d2->l = lv2;
-
-	/ Create List Circulaire /
-
-	struct List * lc = create_Circ_List(8);
-	add_Circ_List(d1, add_Circ_List(NULL, add_Circ_List(NULL, add_Circ_List(d2, add_Circ_List(NULL, add_Circ_List(NULL, add_Circ_List(NULL, add_Circ_List(NULL, lc))))))));
-
-	/ Affichage /
-
-	struct Donnee * d;
-
-	int i = 0;
-
-	printf("Start\n");
-
-	for(struct List * l = lc; l->suite != lc; l = l->suite) {
-		i++;
-		printf("Data %d :\n", i);
-		d = (struct Donnee *)l->objet;
-		if(d != NULL) {
-			printf("\tDonnées : %s\n", d->data);
-			printList(d->l);
-		} else {
-			printf("\tPas de Données\n");
-		}
-	}
-
-	printf("Over\n");
-
 	return 0;
 }
-*/
+
+int clear_Circ_List(struct List * l, f_obj clearObjet) {
+	if(l != NULL) {
+		struct List * s = l->suite;
+		l->suite = NULL;
+		clear_List(s, clearObjet);
+	}
+	return 0;
+}
+
+int clear_Index_Voisin(struct Index_Voisin * iv) {
+	free(iv);
+	return 0;
+}
+
+int clear_Voisin(struct Voisin * v) {
+	clear_Index_Voisin(v->index);
+	free(v);
+	return 0;
+}
+
+int clear_Index_Donnee(struct Index_Donnee * id) {
+	free(id);
+	return 0;
+}
+
+int clear_Donnee(struct Donnee * d) {
+	clear_Index_Donnee(d->index);
+	clear_List(d->l, (f_obj)&(clear_Voisin));
+	free(d);
+	return 0;
+}
 
