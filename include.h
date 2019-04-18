@@ -35,4 +35,11 @@
 	*/
 #define VUE 1
 
+/**
+	* Fonction qui agit sur un objet
+	* @param void * : l'objet
+	* @return 0
+	*/
+typedef int (*f_obj)(void *);
+
 #endif

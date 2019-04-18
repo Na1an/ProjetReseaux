@@ -83,3 +83,11 @@ int clear_Donnee(struct Donnee * d) {
 	return 0;
 }
 
+/* Autre *///TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO 
+
+struct Index_Voisin * get_and_remove(struct List * l, struct Index_Voisin * iv) {
+	return iv;
+}
+
+
+

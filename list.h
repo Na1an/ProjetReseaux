@@ -33,14 +33,14 @@ struct Index_Voisin {
 	* Voisin dans le réseau
 	* @param struct Index_Voisin * index : index du Voisin
 	* @param uint64_t id : id du Voisin globalement unique
-	* @param char date[26] : date du dernier Hello reçu du Voisin
-	* @param char date_long[26] : date du dernier Hello_Long reçu du Voisin
+	* @param struct timeval date : date du dernier Hello reçu du Voisin
+	* @param struct timeval date_long : date du dernier Hello_Long reçu du Voisin
 	*/
 struct Voisin {
 	struct Index_Voisin * index;
 	uint64_t id;
-	char date[26];
-	char date_long[26];
+	struct timeval date;
+	struct timeval date_long;
 };
 
 /*Données*/
@@ -66,13 +66,6 @@ struct Donnee {
 };
 
 /* Fonctions */
-
-/**
-	* Fonction qui agit sur un objet
-	* @param void * : l'objet
-	* @return 0
-	*/
-typedef int (*f_obj)(void *);
 
 /* Generer */
 
