@@ -337,11 +337,11 @@ int printMsg(char * msg) {/* TODO -> Améliorer : Attention au taille, magic, ve
 		switch(type) {
 
 			case 0 : 
-				printf("=>\nPad1\n");
+				printf("\n\tPad1\n");
 				break;
 
 			case 1 : 
-				printf("=>\nPadN\n");
+				printf("\n\tPadN\n");
 				break;
 
 			case 2 : 

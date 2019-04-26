@@ -30,6 +30,11 @@ struct Index_Voisin {
 };
 
 /**
+	Atteint l objet Index_Voisin d'une liste
+	*/
+#define I_VOISIN(_l) ((struct Index_Voisin *)((_l)->objet))
+
+/**
 	* Voisin dans le réseau
 	* @param struct Index_Voisin * index : index du Voisin
 	* @param uint64_t id : id du Voisin globalement unique
@@ -42,6 +47,11 @@ struct Voisin {
 	struct timeval date;
 	struct timeval date_long;
 };
+
+/**
+	Atteint l objet Voisin d'une liste
+	*/
+#define VOISIN(_l) ((struct Voisin *)((_l)->objet))
 
 /*Données*/
 
@@ -56,6 +66,11 @@ struct Index_Donnee {
 };
 
 /**
+	Atteint l objet Index_Donnee d'une liste
+	*/
+#define I_DONNEE(_l) ((struct Index_Donnee *)((_l)->objet))
+
+/**
 	* Donnee à envoyer
 	* @param struct Index_Donnee * index : index de la Donnee
 	* @param struct List * l : List de Voisin à qui il faut envoyer la Donnee
@@ -64,6 +79,11 @@ struct Donnee {
 	struct Index_Donnee * index;
 	struct List * l;
 };
+
+/**
+	Atteint l objet Donnee d'une liste
+	*/
+#define DONNEE(_l) ((struct Donnee *)((_l)->objet))
 
 /* Fonctions */
 
