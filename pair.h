@@ -39,19 +39,19 @@ struct Base {
 };
 
 /**
-	* Evènement d'envoie d'un message à un destinataire
+	* Evènement d'envoie d'un tlv à un destinataire
 	* @param struct timeval tv : date d'envoie
 	* @param int opt : option
 	* @param struct Index_Voisin * dest : le destinataire
-	* @param char * msg : le message
-	* @param int msg_len : taille du message
+	* @param char * tlv : le tlv
+	* @param int tlv_len : taille du tlv
 	*/
 struct Event {
 	struct timeval tv;
 	int opt;
 	struct Index_Voisin * dest;
-	char * msg;
-	int msg_len;
+	char * tlv;
+	int tlv_len;
 };
 
 /**

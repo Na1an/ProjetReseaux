@@ -36,6 +36,11 @@
 #define VUE 1
 
 /**
+	* Si l'on veut afficher le chemin par lequel le programme passe
+	*/
+#define SHOWPATH 0
+
+/**
 	* Fonction qui agit sur un objet
 	* @param void * : l'objet
 	* @return 0

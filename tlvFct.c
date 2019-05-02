@@ -298,13 +298,9 @@ int getWarning_Message_Taille(char * warning) {
 
 /*Global*/
 
-int printMsg(char * msg) {/* TODO -> Améliorer : Attention au taille, magic, version, ...*/
+int printMsg(char * msg) {
 
-	time_t timep;
-	time(&timep);
-	/*//printf("%s", asctime(gmtime(&timep)));
-	char * date_short = 0;//[26];
-	char * date_long = 0;//[26];*/
+	printf("\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\n");
 
 	printf("Magic : %"PRIu8"\n", getMsg_Magic(msg));
 	printf("Version : %"PRIu8"\n", getMsg_Version(msg));
@@ -348,12 +344,10 @@ int printMsg(char * msg) {/* TODO -> Améliorer : Attention au taille, magic, ve
 				if(tlv_len == 8) {
 					printf("{\n\tHello_short :\n");
 					printf("\t\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
-					printf("\t\tDate : %s", asctime(gmtime(&timep)));
 				 } else if(tlv_len == 16) {
 					printf("{\n\tHello_long :\n");
 					printf("\t\tSource_Id : %"PRIu64"\n", getHello_Source_Id(tlv));
 					printf("\t\tDestination_Id : %"PRIu64"\n", getHello_long_Destination_Id(tlv));
-					printf("\t\tDate : %s", asctime(gmtime(&timep)));
 				 } else {
 					printf("{\n\tHello Inconnu\n");	
 				 }
@@ -366,33 +360,6 @@ int printMsg(char * msg) {/* TODO -> Améliorer : Attention au taille, magic, ve
 				in_port_t port = getNeighbour_Port(tlv);
 				printf("\t\tIP : %s\n", ip.s6_addr);
 				printf("\t\tPort : %"PRIu16"\n", port);
-				
-				/*//put the Neighbour in the NeighbourList
-				
-				struct ListVoisin * tmp = malloc(sizeof(struct ListVoisin));
-				memset(tmp, 0, sizeof(struct ListVoisin));
-				
-				tmp = list_voisin;
-				while(tmp->suite != NULL){
-					tmp->suite = init_ListVoisin();
-					tmp = tmp->suite;
-				}
-				
-				tmp->voisin->ip = ip;
-				tmp->voisin->port = port;
-				tmp->id = source_id;//NON !?
-
-				printf("\t\tSource_Id : %"PRIu64"\n", tmp->id);
-				date_short = asctime(gmtime(&timep));
-				printf("\t\tDate_Short : %s", date_short);
-				memcpy(tmp->date, date_short, strlen(date_short));
-			      	
-				date_long = asctime(gmtime(&timep));
-				printf("\t\tDate_Long : %s", date_long);
-				memcpy(tmp->date_long, date_long, strlen(date_long));
-		
-				//printf("\t\tid de list_voisin : %"PRIu64"\n", list_voisin->id);
-				//free(tmp);*/	
 				break;
 
 			case 4 : 
@@ -433,9 +400,8 @@ int printMsg(char * msg) {/* TODO -> Améliorer : Attention au taille, magic, ve
 		i += (tlv_len+TLV_ENTETE);
 
 	}
-	printf("\nTime : %s \n", asctime(gmtime(&timep)));
 
-	printf("///////////////////////////////\n");
+	printf("/////////////////////////////////////////\n");
 
 	return 0;
 
