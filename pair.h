@@ -96,6 +96,8 @@ int tvcmp(struct timeval * tv1, struct timeval * tv2);
 	* @param int usec : le nombre de micro-second restant 
 	* @return 0
 	*/
-int setEventTime(struct Event * e, int sec, int usec);
+int setEventTime(struct Event * e, int sec);
+
+struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l);
 
 #endif

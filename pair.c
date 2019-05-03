@@ -250,7 +250,7 @@ printf("NEW VOISIN\n");
 
 						e = malloc(sizeof(struct Event));
 						memset(e, 0, sizeof(struct Event));
-						setEventTime(e, 0, 0);
+						setEventTime(e, 0);
 						e->dest = malloc(sizeof(struct Index_Voisin));
 						memset(e->dest, 0, sizeof(struct Index_Voisin));
 						memcpy(e->dest, v->index, sizeof(struct Index_Voisin));
@@ -308,7 +308,7 @@ printf("NEW VOISIN\n");
 							e = malloc(sizeof(struct Event));
 							memset(e, 0, sizeof(struct Event));
 							e->opt = 1;
-							setEventTime(e, 0, 1000*(rand()%2000));
+							setEventTime(e, rand()%2);
 							e->dest = malloc(sizeof(struct Index_Voisin));
 							memset(e->dest, 0, sizeof(struct Index_Voisin));
 							memcpy(e->dest, VOISIN(l)->index, sizeof(struct Index_Voisin));
@@ -324,7 +324,7 @@ printf("NEW VOISIN\n");
 
 				e = malloc(sizeof(struct Event));
 				memset(e, 0, sizeof(struct Event));
-				setEventTime(e, 0, 0);
+				setEventTime(e, 0);
 				e->dest = malloc(sizeof(struct Index_Voisin));
 				memset(e->dest, 0, sizeof(struct Index_Voisin));
 				memcpy(e->dest, iv_actuel, sizeof(struct Index_Voisin));
@@ -393,24 +393,26 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 
 	gettimeofday(&now, NULL);
 
-	//if(body_len + MSG_ENTETE > BUF_SIZE) {printf("System Send :\n\tToo Much Length\n");return 2;}
-
 	uint8_t type;
 	uint8_t tlv_len;
 
 	char txt[BUF_SIZE];
-	/*int k;
-	struct Index_Voisin * iv;
+	//int k;
+	//struct Index_Voisin * iv;
 	struct Voisin * v ;
 	struct Event * e;
-	struct List * l;
-	struct List * aux;*/
+	//struct List * l;
+	//struct List * aux;
+	struct timeval tv;
 	
 	memset(txt, 0, BUF_SIZE);
 
 	type = getTlv_Type(event->tlv);
 
 	tlv_len = getTlv_Length(event->tlv);
+
+	createMsg(msg);
+	int msg_len = setMsg_Body(msg, event->tlv, event->tlv_len);
 
 	switch(type) {
 
@@ -423,12 +425,29 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 			break;
 
 		case 2 : //Hello
-//TODO goaway
 			if(tlv_len == 8) {//Short
-				/*Rien*/
+				/*Rien*///TODO ATTENTION : A ENLEVER DES VOISINSPotentiels
 			}
 			if(tlv_len == 16) {//Long
-				/*Rien*/
+				v = find_Voisin(event->dest, base->list_voisin);
+				if(v == NULL) {return -1;}
+				gettimeofday(&tv, NULL);
+				if(tvcmp(&v->date, &tv) < 30) {//Encore
+					e = malloc(sizeof(struct Event));
+					memset(e, 0, sizeof(struct Event));
+					setEventTime(e, 30);
+					e->dest = malloc(sizeof(struct Index_Voisin));
+					memset(e->dest, 0, sizeof(struct Index_Voisin));
+					memcpy(e->dest, event->dest, sizeof(struct Index_Voisin));
+					e->tlv = malloc(BUF_SIZE);
+					memcpy(e->tlv, event->tlv, event->tlv_len);
+					e->tlv_len = event->tlv_len;
+					base->list_event = add_List_Event(e, base->list_event);
+				} else {//Mort
+					createMsg(msg);
+					event->tlv_len = createGoAway(txt, 2, NULL, 0);
+					msg_len = setMsg_Body(msg, txt, event->tlv_len);//TODO ATTENTION : A ENLEVER DES VOISINS + Clear event
+				}
 			}
 			break;
 
@@ -450,10 +469,27 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 			break;
 
 		case 4 : //Data
-//TODO goaway
+			if(event->opt < 5) {//Encore
+				e = malloc(sizeof(struct Event));
+				memset(e, 0, sizeof(struct Event));
+				e->opt = event->opt + 1;
+				setEventTime(e, (2^(event->opt-1)) + rand()%(2^(event->opt-1)));
+				e->dest = malloc(sizeof(struct Index_Voisin));
+				memset(e->dest, 0, sizeof(struct Index_Voisin));
+				memcpy(e->dest, event->dest, sizeof(struct Index_Voisin));
+				e->tlv = malloc(BUF_SIZE);
+				memcpy(e->tlv, event->tlv, event->tlv_len);
+				e->tlv_len = event->tlv_len;
+				base->list_event = add_List_Event(e, base->list_event);
+			} else {//Mort
+				createMsg(msg);
+				event->tlv_len = createGoAway(txt, 2, NULL, 0);
+				msg_len = setMsg_Body(msg, txt, event->tlv_len);//TODO ATTENTION : A ENLEVER DES VOISINS + Clear event
+			}
 			break;
 
 		case 5 : //Ack : 
+			/* Rien : Tout est fait dans traitement_recv */
 			break;
 
 		case 6 : 
@@ -474,8 +510,7 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 			if(VUE) {printf("System Send :\n\tTlv Inconnu\n");}
 	}
 
-	createMsg(msg);
-	return setMsg_Body(msg, event->tlv, event->tlv_len);
+	return msg_len;
 }
 
 int start(int sock) {
@@ -532,9 +567,9 @@ int start(int sock) {
 
 	renvoie: if(SHOWPATH) {printf("RENVOIE !\n");}
 
-	if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
+	if(event_current->dest != NULL && msg_len != -1) {
 
-	if(event_current->dest != NULL) {
+		if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
 
 		get_voisin_addr(event_current->dest, &dest_addr);
 
@@ -615,10 +650,9 @@ int tvcmp(struct timeval * tv1, struct timeval * tv2) {
 	return tv2->tv_sec - tv1->tv_sec;
 }
 
-int setEventTime(struct Event * e, int sec, int usec) {
+int setEventTime(struct Event * e, int sec) {
 	gettimeofday(&(e->tv), NULL);
 	(e->tv).tv_sec += sec;
-	(e->tv).tv_usec += usec;
 	return 0;
 }
 
@@ -647,6 +681,14 @@ int clear_Base(struct Base * base) {
 	clear_List(base->list_data, (f_obj)&clear_Donnee);
 	free(base);
 	return 0;
+}
+
+struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l) {
+	if(l == NULL) {return NULL;}
+	if(VOISIN(l) != NULL && memcmp(VOISIN(l)->index, iv, sizeof(struct Index_Voisin)) == 0) {
+		return VOISIN(l);
+	}
+	return find_Voisin(iv, l->suite);
 }
 
 

@@ -255,7 +255,7 @@ int createGoAway(char * goAway, uint8_t code, char * message, int taille) {
 	memcpy(goAway, &type, 1);
 	memcpy(goAway+1, &len, 1);
 	memcpy(goAway+2, &code, 1);
-	memcpy(goAway+3, &message, taille);
+	memcpy(goAway+3, message, taille);
 	return len+TLV_ENTETE;
 }
 
@@ -283,7 +283,7 @@ int createWarning(char * warning, char * message, int taille) {
 	uint8_t len = taille;
 	memcpy(warning, &type, 1);
 	memcpy(warning+1, &len, 1);
-	memcpy(warning+2, &message, taille);
+	memcpy(warning+2, message, taille);
 	return len+TLV_ENTETE;
 }
 
