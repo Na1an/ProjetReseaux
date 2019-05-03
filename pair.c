@@ -196,21 +196,21 @@ int traitement_recv(int sock, struct Base * base) {
 				break;
 
 			case 2 : //Hello
+printf("HELLO\n");
 				if(tlv_len == 8 || (tlv_len == 16 && base->id == getHello_long_Destination_Id(tlv))) {
-					printf("%d\n", base->list_voisin == NULL);
 					for(
 						l = base->list_voisin;
 						l != NULL && memcmp(VOISIN(l)->index, iv_actuel, sizeof(struct Index_Voisin)) != 0;
 						l = l->suite
-					) {printf("%d, %d\n", (VOISIN(l)->index)->port, iv_actuel->port);}
+					);
 					if(l != NULL) {//Déjà Voisin
-printf("DEJA VOISIN\n");
+//printf("DEJA VOISIN\n");
 						v = VOISIN(l);
 						v->date = now;
 						if(tlv_len == 16) {v->date_long = now;}//Long
 						
 					} else {//Nouveau Voisin
-printf("NEW VOISIN\n");
+//printf("NEW VOISIN\n");
 
 						l = base->list_voisin_potentiel;
 
@@ -241,10 +241,8 @@ printf("NEW VOISIN\n");
 						v->id = getHello_Source_Id(tlv);
 						v->date = now;
 						if(tlv_len == 16) {v->date_long = now;}//Long
-					printf("%d\n", base->list_voisin == NULL);
 
 						base->list_voisin = add_List(v, base->list_voisin);
-					printf("%d\n", base->list_voisin == NULL);
 
 						//On lui envoie des Hello_long
 
@@ -262,37 +260,45 @@ printf("NEW VOISIN\n");
 				break;
 
 			case 3 : //Neighbour
+printf("NEIGHTBOUR\n");
 				iv = malloc(sizeof(struct Index_Voisin));
 				memset(iv, 0, sizeof(struct Index_Voisin));
 				getNeighbour_Ip(tlv, &(iv->ip));
 				iv->port = getNeighbour_Port(tlv);
+printf("NEIGHTBOUR1\n");
 				for(
 					l = base->list_voisin_potentiel;
 					l != NULL && memcmp(I_VOISIN(l), iv, sizeof(struct Index_Voisin)) != 0;
 					l = l->suite
 				);
+printf("NEIGHTBOUR2\n");
 				for(
 					aux = base->list_voisin;
 					aux != NULL && memcmp(VOISIN(aux)->index, iv, sizeof(struct Index_Voisin)) != 0;
 					aux = aux->suite
 				);
+printf("NEIGHTBOUR3\n");
 				if(l != NULL || aux != NULL) {//Déjà Connu(e)
 					free(iv);break;
 				} else {//On l ajoute au Voisin Potentiel
 					base->list_voisin_potentiel = add_List(iv, base->list_voisin_potentiel);
 				}
+printf("NEIGHTBOUR4\n");
 
 				break;
 
 			case 4 : //Data
+printf("DATA\n");
 				id = malloc(sizeof(struct Index_Donnee));
 				memset(id, 0, sizeof(struct Index_Donnee));
 				id->id = getData_Sender_Id(tlv);
 				id->nonce = getData_Nonce(tlv);
+printf("DATA1\n");
 				for(
 					l = base->list_data;
 					l->suite != base->list_data && I_DONNEE(l) != NULL && memcmp(I_DONNEE(l), id, sizeof(struct Index_Donnee)) != 0;
 				);
+printf("DATA2\n");
 
 				if(l->suite == base->list_data &&
 				(I_DONNEE(l) == NULL || memcmp(I_DONNEE(l), id, sizeof(struct Index_Donnee)) != 0)) {
@@ -319,6 +325,7 @@ printf("NEW VOISIN\n");
 						}
 					}
 				}
+printf("DATA3\n");
 
 				//On acquitte l envoyeur
 
@@ -333,20 +340,39 @@ printf("NEW VOISIN\n");
 				base->list_event = add_List_Event(e, base->list_event);
 
 				type = 5;//On n envoie pas a l envoyeur
+printf("DATA4\n");
 
 			case 5 : //Ack :
-				for(l = base->list_event; l != NULL; l = l->suite) {
-					if(EVENT(l->suite) != NULL &&
-					memcmp(EVENT(l->suite)->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
+printf("ACK\n");
+				if(base->list_event != NULL) {
+					e = EVENT(base->list_event);
+					if(e != NULL &&
+					memcmp(e->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
 					getTlv_Type(e->tlv) == 4 &&
 					getData_Sender_Id(e->tlv) == getData_Sender_Id(tlv) &&
 					getData_Nonce(e->tlv) == getData_Nonce(tlv)) {
-						aux = l->suite;
-						l->suite = aux->suite;
-						free(EVENT(aux));//! faire free Event TODO
-						free(aux);
+						l = base->list_event;
+						base->list_event = l->suite;
+						free(EVENT(l));
+						free(l);
+					} else {
+						for(l = base->list_event; l->suite != NULL; l = l->suite) {
+printf("ACK2\n");
+							if(EVENT(l->suite) != NULL &&
+							memcmp(EVENT(l->suite)->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
+							getTlv_Type(EVENT(l->suite)->tlv) == 4 &&
+							getData_Sender_Id(EVENT(l->suite)->tlv) == getData_Sender_Id(tlv) &&
+							getData_Nonce(EVENT(l->suite)->tlv) == getData_Nonce(tlv)) {
+printf("ACK3\n");
+								aux = l->suite;
+								l->suite = aux->suite;
+								free(EVENT(aux));//! faire free Event TODO
+								free(aux);
+							}
+						}
 					}
 				}
+printf("ACK1\n");
 				break;
 
 			case 6 : 
@@ -519,7 +545,7 @@ int start(int sock) {
 
 	int rc;
 	struct timeval tv;
-	struct timeval * mtv(struct timeval * tv) {if(tv->tv_sec < 0) {tv->tv_sec = 0;} return tv;}
+	struct timeval * mtv(struct timeval * tv) {if(tv->tv_sec < 0) {tv->tv_sec = 0;} if(tv->tv_usec < 0) {tv->tv_usec = 0;} return tv;}
 	fd_set readfds;
 
 	char * msg = malloc(BUF_SIZE);
@@ -562,8 +588,10 @@ int start(int sock) {
 	event_current = event_next;//Non NULL
 
 	base.list_event = base.list_event->suite;
+printf("Debut traitement send\n");
 
 	msg_len = traitement_send(event_current, &base, msg);
+printf("Fin traitement send\n");
 
 	renvoie: if(SHOWPATH) {printf("RENVOIE !\n");}
 
@@ -592,7 +620,8 @@ int start(int sock) {
 	} else {
 		gettimeofday(&tv, NULL);
 		tv.tv_sec = (event_next->tv).tv_sec - tv.tv_sec;
-		tv.tv_sec = (event_next->tv).tv_usec - tv.tv_usec;
+		tv.tv_usec = (event_next->tv).tv_usec - tv.tv_usec;
+
 		if(DEBUG) {printf("TIME : sec : %ld, usec : %ld\n", tv.tv_sec, tv.tv_usec);}
 	}
 
@@ -605,6 +634,7 @@ int start(int sock) {
 
 	if(rc > 0) {
 		if(FD_ISSET(sock, &readfds)) {
+printf("traitement recv\n");
 			switch(traitement_recv(sock, &base)) {//Voir pour envoyer warning ... 2 = msg Ignoré
 				case 1 : goto renvoie;
 				case -1 : return -1;
