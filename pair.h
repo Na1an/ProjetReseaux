@@ -100,4 +100,6 @@ int setEventTime(struct Event * e, int sec);
 
 struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l);
 
+int rmVoisin(struct Index_Voisin * iv, struct Base * b);
+
 #endif

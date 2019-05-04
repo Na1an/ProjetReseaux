@@ -204,33 +204,15 @@ printf("HELLO\n");
 						l = l->suite
 					);
 					if(l != NULL) {//Déjà Voisin
-//printf("DEJA VOISIN\n");
+printf("DEJA VOISIN\n");
 						v = VOISIN(l);
 						v->date = now;
 						if(tlv_len == 16) {v->date_long = now;}//Long
 						
 					} else {//Nouveau Voisin
-//printf("NEW VOISIN\n");
+printf("NEW VOISIN\n");
 
-						l = base->list_voisin_potentiel;
-
-						if(l != NULL) {//On le supprime de la List de Voisin Potentiel
-							if(memcmp(I_VOISIN(l), iv_actuel, sizeof(struct Index_Voisin)) == 0) {
-								base->list_voisin_potentiel = l->suite;
-								free(I_VOISIN(l));
-								free(l);
-							} else {
-								while(l->suite != NULL && memcmp(I_VOISIN(l->suite), iv_actuel, sizeof(struct Index_Voisin)) != 0) {
-									l = l->suite;
-								}
-								if(l->suite != NULL) {
-									aux = l->suite;
-									l->suite = aux->suite;
-									free(I_VOISIN(aux));
-									free(aux);
-								}
-							}
-						}
+						rmVoisin(iv_actuel, base);
 
 						//On l'ajoute au Voisin
 
@@ -345,6 +327,24 @@ printf("DATA4\n");
 			case 5 : //Ack :
 printf("ACK\n");
 				if(base->list_event != NULL) {
+					for(l = base->list_event; l->suite != NULL; l = l->suite) {
+printf("ACK2\n");
+						e = EVENT(l->suite);
+						if(e != NULL &&
+						memcmp(e->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
+						getTlv_Type(e->tlv) == 4 &&
+						getData_Sender_Id(e->tlv) == getData_Sender_Id(tlv) &&
+						getData_Nonce(e->tlv) == getData_Nonce(tlv)) {
+printf("ACK3\n");
+							aux = l->suite;
+							l->suite = aux->suite;
+							free(EVENT(aux)->dest);
+							free(EVENT(aux)->tlv);
+							free(EVENT(aux));
+							free(aux);
+						}
+					}
+
 					e = EVENT(base->list_event);
 					if(e != NULL &&
 					memcmp(e->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
@@ -355,23 +355,9 @@ printf("ACK\n");
 						base->list_event = l->suite;
 						free(EVENT(l));
 						free(l);
-					} else {
-						for(l = base->list_event; l->suite != NULL; l = l->suite) {
-printf("ACK2\n");
-							if(EVENT(l->suite) != NULL &&
-							memcmp(EVENT(l->suite)->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
-							getTlv_Type(EVENT(l->suite)->tlv) == 4 &&
-							getData_Sender_Id(EVENT(l->suite)->tlv) == getData_Sender_Id(tlv) &&
-							getData_Nonce(EVENT(l->suite)->tlv) == getData_Nonce(tlv)) {
-printf("ACK3\n");
-								aux = l->suite;
-								l->suite = aux->suite;
-								free(EVENT(aux));//! faire free Event TODO
-								free(aux);
-							}
-						}
 					}
 				}
+						
 printf("ACK1\n");
 				break;
 
@@ -452,7 +438,7 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 
 		case 2 : //Hello
 			if(tlv_len == 8) {//Short
-				/*Rien*///TODO ATTENTION : A ENLEVER DES VOISINSPotentiels
+				rmVoisin(event->dest, base);
 			}
 			if(tlv_len == 16) {//Long
 				v = find_Voisin(event->dest, base->list_voisin);
@@ -472,12 +458,14 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 				} else {//Mort
 					createMsg(msg);
 					event->tlv_len = createGoAway(txt, 2, NULL, 0);
-					msg_len = setMsg_Body(msg, txt, event->tlv_len);//TODO ATTENTION : A ENLEVER DES VOISINS + Clear event
+					if(VUE) {printf("System Send :\nGoAway By Death in 'Hello'\n");}
+					msg_len = setMsg_Body(msg, txt, event->tlv_len);
+					rmVoisin(event->dest, base);
 				}
 			}
 			break;
 
-		case 3 : //Neighbour
+		case 3 : //Neighbour//TODO
 			/*iv = malloc(sizeof(struct Index_Voisin));
 			memset(iv, 0, sizeof(struct Index_Voisin));
 			getNeighbour_Ip(tlv, &(iv->ip));
@@ -510,7 +498,9 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 			} else {//Mort
 				createMsg(msg);
 				event->tlv_len = createGoAway(txt, 2, NULL, 0);
-				msg_len = setMsg_Body(msg, txt, event->tlv_len);//TODO ATTENTION : A ENLEVER DES VOISINS + Clear event
+				if(VUE) {printf("System Send :\nGoAway By Death in 'Data'\n");}
+				msg_len = setMsg_Body(msg, txt, event->tlv_len);
+				rmVoisin(event->dest, base);
 			}
 			break;
 
@@ -696,8 +686,8 @@ struct List * add_List_Event(struct Event * e, struct List * l) {
 }
 
 int clear_Event(struct Event * e) {
-	//clear_List(e->dest, (f_obj)&clear_Index_Voisin);
-	//free(e->tlv);// Oui ou Non ?!
+	free(e->dest);
+	free(e->tlv);
 	free(e);
 	return 0;
 }
@@ -720,5 +710,72 @@ struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l) {
 	}
 	return find_Voisin(iv, l->suite);
 }
+
+int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
+	struct List * l;
+	struct List * aux;
+	if(b->list_voisin_potentiel != NULL) {
+		for(l = b->list_voisin_potentiel; l->suite != NULL; l = l->suite) {
+			if(I_VOISIN(l->suite) != NULL && memcmp(I_VOISIN(l->suite), iv, sizeof(struct Index_Voisin)) == 0) {
+				aux = l->suite;
+				l->suite = aux->suite;
+				free(I_VOISIN(aux));
+				free(aux);
+			}
+		}
+		if(I_VOISIN(b->list_voisin_potentiel) != NULL && memcmp(I_VOISIN(b->list_voisin_potentiel), iv, sizeof(struct Index_Voisin)) == 0) {
+			l = b->list_voisin_potentiel;
+			b->list_voisin_potentiel = l->suite;
+			free(I_VOISIN(l));
+			free(l);
+		}
+	}
+	if(b->list_voisin != NULL) {
+		for(l = b->list_voisin; l->suite != NULL; l = l->suite) {
+			if(VOISIN(l->suite) != NULL && VOISIN(l->suite)->index != NULL && memcmp(VOISIN(l->suite)->index, iv, sizeof(struct Index_Voisin)) == 0) {
+				aux = l->suite;
+				l->suite = aux->suite;
+				free(VOISIN(aux)->index);
+				free(VOISIN(aux));
+				free(aux);
+			}
+		}
+		if(VOISIN(b->list_voisin) != NULL && VOISIN(b->list_voisin)->index != NULL && memcmp(VOISIN(b->list_voisin)->index, iv, sizeof(struct Index_Voisin)) == 0) {
+				l = b->list_voisin;
+				b->list_voisin = l->suite;
+				free(VOISIN(l)->index);
+				free(VOISIN(l));
+				free(l);
+		}
+	}
+	if(b->list_event != NULL) {
+		for(l = b->list_event; l->suite != NULL; l = l->suite) {
+			if(EVENT(l->suite) != NULL && EVENT(l->suite)->dest != NULL && memcmp(EVENT(l->suite)->dest, iv, sizeof(struct Index_Voisin)) == 0) {
+				aux = l->suite;
+				l->suite = aux->suite;
+				free(EVENT(aux)->dest);
+				free(EVENT(aux)->tlv);
+				free(EVENT(aux));
+				free(aux);
+			}
+		}
+		if(EVENT(b->list_event) != NULL && EVENT(b->list_event)->dest != NULL && memcmp(EVENT(b->list_event)->dest, iv, sizeof(struct Index_Voisin)) == 0) {
+			l = b->list_event;
+			b->list_event = l->suite;
+			free(EVENT(l)->dest);
+			free(EVENT(l)->tlv);
+			free(EVENT(l));
+			free(l);
+		}
+	}
+	return 0;
+}
+
+
+
+
+
+
+
 
 
