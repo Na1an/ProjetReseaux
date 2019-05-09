@@ -3,9 +3,7 @@
 
 #include "include.h"
 
-/* Structures */
-
-/*List en Général*/
+/*List Général*/
 
 /**
 	* Liste chainée d'élément
@@ -16,6 +14,45 @@ struct List {
 	void * objet;
 	struct List * suite;
 };
+
+/**
+	* Ajoute un élément à une List
+	* @param void * ob : l'élément
+	* @param struct List * list : la List
+	* @return la nouvelle List
+	*/
+struct List * add_List(void * ob, struct List * list);
+
+/**
+	* Créer une List circulaire
+	* @param int size : taille de la List
+	* @return la nouvelle List
+	*/
+struct List * create_Circ_List(int size);
+
+/**
+	* Remplit une List circulaire avec un élément
+	* @param void * ob : l'élément
+	* @param struct List * list : la List
+	* @return la nouvelle List
+	*/
+struct List * add_Circ_List(void * ob, struct List * list);
+
+/**
+	* Efface une List
+	* @param struct List * l : la List
+	* @param f_obj clearObjet : fonction qui efface l'objet
+	* @return 0
+	*/
+int clear_List(struct List * l, f_obj clearObjet);
+
+/**
+	* Efface une List Circulaire
+	* @param struct List * l : la List
+	* @param f_obj clearObjet : fonction qui efface l'objet
+	* @return 0
+	*/
+int clear_Circ_List(struct List * l, f_obj clearObjet);
 
 /*Voisins*/
 
@@ -33,6 +70,13 @@ struct Index_Voisin {
 	Atteint l objet Index_Voisin d'une liste
 	*/
 #define I_VOISIN(_l) ((struct Index_Voisin *)((_l)->objet))
+
+/**
+	* Efface un Index_Voisin de la mémoire
+	* @param struct Index_Voisin * iv : le Index_Voisin
+	* @return 0
+	*/
+int clear_Index_Voisin(struct Index_Voisin * iv);
 
 /**
 	* Voisin dans le réseau
@@ -53,6 +97,13 @@ struct Voisin {
 	*/
 #define VOISIN(_l) ((struct Voisin *)((_l)->objet))
 
+/**
+	* Efface un Voisin de la mémoire
+	* @param struct Voisin * v : le Voisin
+	* @return 0
+	*/
+int clear_Voisin(struct Voisin * v);
+
 /*Données*/
 
 /**
@@ -71,98 +122,6 @@ struct Index_Donnee {
 #define I_DONNEE(_l) ((struct Index_Donnee *)((_l)->objet))
 
 /**
-	* Donnee à envoyer
-	* @param struct Index_Donnee * index : index de la Donnee
-	* @param struct List * l : List de Voisin à qui il faut envoyer la Donnee
-	*/
-struct Donnee {
-	struct Index_Donnee * index;
-	struct List * l;
-};
-
-/**
-	Atteint l objet Donnee d'une liste
-	*/
-#define DONNEE(_l) ((struct Donnee *)((_l)->objet))
-
-/* Fonctions */
-
-/* Generer */
-
-/**
-	* Ajoute un élément à une List
-	* @param void * ob : l'élément
-	* @param struct List * list : la List
-	* @return la nouvelle List
-	*/
-struct List * add_List(void * ob, struct List * list);
-
-/**
-	* Remplit une List circulaire avec un élément
-	* @param void * ob : l'élément
-	* @param struct List * list : la List
-	* @return la nouvelle List
-	*/
-struct List * add_Circ_List(void * ob, struct List * list);
-
-/**
-	* Créer une List circulaire
-	* @param int size : taille de la List
-	* @return la nouvelle List
-	*/
-struct List * create_Circ_List(int size);
-
-/* Egalite */
-
-/**
-	* Compare deux Index_Voisin
-	* @param struct Index_Voisin * v1 : un Index_Voisin
-	* @param struct Index_Voisin * v2 : un autre Index_Voisin
-	* @return si les deux Index_Voisin sont égaux
-	*/
-int eqIVoisin(struct Index_Voisin * v1, struct Index_Voisin * v2);
-
-/**
-	* Compare deux Index_Donnee
-	* @param struct Index_Donnee * d1 : un Index_Donnee
-	* @param struct Index_Donnee * d2 : un autre Index_Donnee
-	* @return si les deux Index_Donnee sont égaux
-	*/
-int eqIDonnee(struct Index_Donnee * d1, struct Index_Donnee * d2);
-
-/* Clear */
-
-/**
-	* Efface une List de la mémoire
-	* @param struct List * l : la List
-	* @param f_obj clearObjet : fonction utilisé pour effacer les élément de la List
-	* @return 0
-	*/
-int clear_List(struct List * l, int (*clearObjet)(void *));
-
-/**
-	* Efface une List circulaire de la mémoire
-	* @param struct List * l : la List
-	* @param f_obj clearObjet : fonction utilisé pour effacer les élément de la List
-	* @return 0
-	*/
-int clear_Circ_List(struct List * l, int (*clearObjet)(void *));
-
-/**
-	* Efface un Index_Voisin de la mémoire
-	* @param struct Index_Voisin * iv : le Index_Voisin
-	* @return 0
-	*/
-int clear_Index_Voisin(struct Index_Voisin * iv);
-
-/**
-	* Efface un Voisin de la mémoire
-	* @param struct Voisin * v : le Voisin
-	* @return 0
-	*/
-int clear_Voisin(struct Voisin * v);
-
-/**
 	* Efface un Index_Donnee de la mémoire
 	* @param struct Index_Donnee * id : le Index_Donnee
 	* @return 0
@@ -170,10 +129,64 @@ int clear_Voisin(struct Voisin * v);
 int clear_Index_Donnee(struct Index_Donnee * id);
 
 /**
-	* Efface une Donnee de la mémoire
-	* @param struct Donnee * d : la Donnee
+	* Evènement d'envoie d'un tlv à un destinataire
+	* @param struct timeval tv : date d'envoie
+	* @param int opt : option
+	* @param struct Index_Voisin * dest : le destinataire
+	* @param char * tlv : le tlv
+	* @param int tlv_len : taille du tlv
+	*/
+struct Event {
+	struct timeval tv;
+	int opt;
+	struct Index_Voisin * dest;
+	char * tlv;
+	int tlv_len;
+};
+
+/**
+	Atteint l objet Event d'une liste
+	*/
+#define EVENT(_l) ((struct Event *)((_l)->objet))
+
+/**
+	* Efface un Event de la mémoire
+	* @param struct Event * e : le Event
 	* @return 0
 	*/
-int clear_Donnee(struct Donnee * d);
+int clear_Event(struct Event * e);
+
+/**
+	* Ajoute un Event dans une List de Event
+	* @param struct Event * e : le Event
+	* @param struct List * l : la List
+	* @return la Nouvelle List
+	*/
+struct List * add_List_Event(struct Event * e, struct List * l);
+
+/**
+	* Insert un temps dans un Event
+	* @param struct Event * e : le Event
+	* @param int sec : le nombre de second restant 
+	* @param int usec : le nombre de micro-second restant 
+	* @return 0
+	*/
+int setEventTime(struct Event * e, int sec);
+
+/**
+	* Compare 2 timevals
+	* @param struct timeval * tv1 : le timeval 1
+	* @param struct timeval * tv2 : le timeval 2
+	* @return < 0 <=> tv1 < tv2
+	*/
+int tvcmp(struct timeval * tv1, struct timeval * tv2);
+
+/**
+	* Trouve un Voisin dans une List 
+	* @param struct Index_Voisin * iv : l'Index_Voisin du Voisin a chercher
+	* @param struct List * l : la List dans laquelle chercher
+	* @return le Voisin
+	*/
+struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l);
 
 #endif

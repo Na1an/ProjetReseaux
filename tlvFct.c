@@ -146,23 +146,6 @@ int getNeighbour_Ip(char * neighbour, struct in6_addr * ip) {
 	return 16;
 }
 
-/*int getNeighbour_Ip2(char * neighbour, struct in6_addr * ip, char * res) {
-	memset(ip, 0, 16);
-	
-	char str1[16]; //copy la chaine
-	memset(str1, 0, 16);
-	memcpy(str1, neighbour+2, 16);
-	
-	//char str2[16];
-	memset(res, 0, 16);
-
-	inet_pton(AF_INET6, str1, ip);
-	printf("str1 : %s \n", str1);
-	printf("ip->s6_addr : %s \n", ip->s6_addr);
-	inet_ntop(AF_INET6, ip, res, 16);
-	return 1;	
-}*/
-
 in_port_t getNeighbour_Port(char * neighbour) {
 	in_port_t port;
 	memcpy(&port, neighbour+18, 2);
@@ -172,14 +155,17 @@ in_port_t getNeighbour_Port(char * neighbour) {
 
 /*Data*/
 
-int createData(char * data, uint64_t sId, uint32_t nonce) {
+int createData(char * data, uint64_t sId, uint32_t nonce, uint8_t t, char * donnees, int taille) {
 	memset(data, 0, BUF_SIZE-MSG_ENTETE);
 	uint8_t type = 0x4;//4;
-	uint8_t len = 0xD;//13;
+	uint8_t len = 0xD + taille;//13;
+	if(len+MSG_ENTETE > BUF_SIZE) return -1;
 	memcpy(data, &type, 1);
 	memcpy(data+1, &len, 1);
 	memcpy(data+2, &sId, 8);
 	memcpy(data+10, &nonce, 4);
+	memcpy(data+14, &t, 1);
+	memcpy(data+15, donnees, taille);
 	return len+TLV_ENTETE;
 }
 
@@ -208,15 +194,6 @@ char * getData_Donnees(char * data) {
 int getData_Donnees_Taille(char * data) {
 	uint8_t len = getTlv_Length(data);
 	return len-13;
-}
-
-int setData_Donnees(char * data, uint8_t t, char * donnees, int taille) {
-	memcpy(data+14, &t, 1);
-	uint8_t l = getTlv_Length(data);
-	memcpy(data+2+l, donnees, taille);
-	l += taille;
-	memcpy(data+1, &l, 1);
-	return TLV_ENTETE+l;
 }
 
 
@@ -328,7 +305,7 @@ int printMsg(char * msg) {
 
 		tlv_len = getTlv_Length(tlv);
 
-		printf("Tlv_Length : %"PRIu8"\n", tlv_len);
+		if(type != 0) printf("Tlv_Length : %"PRIu8"\n", tlv_len);
 
 		switch(type) {
 
@@ -397,7 +374,12 @@ int printMsg(char * msg) {
 
 		printf("}\n");
 
-		i += (tlv_len+TLV_ENTETE);
+		if(type != 0) {
+			i += (tlv_len+TLV_ENTETE);
+		} else {
+			i++;
+		}
+		printf("Le i : %d\n", i);
 
 	}
 

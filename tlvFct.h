@@ -173,9 +173,12 @@ in_port_t getNeighbour_Port(char * neighbour);
 	* @param char * data : le Data
 	* @param uint64_t sId : l'id du Voisin émetteur du Data
 	* @param uint32_t nonce : le nonce du Data
+	* @param uint8_t t : le type du Data
+	* @param char * donnees : les données du Data
+	* @param int taille : la taille des données du Data
 	* @return la taille du Data
 	*/
-int createData(char * data, uint64_t sId, uint32_t nonce);
+int createData(char * data, uint64_t sId, uint32_t nonce, uint8_t t, char * donnees, int taille);
 
 /**
 	* Prend l'id de l'émetteur d'un Data
@@ -211,16 +214,6 @@ char * getData_Donnees(char * data);
 	* @return la taille
 	*/
 int getData_Donnees_Taille(char * data);
-
-/**
-	* Ajoute des données à un Data
-	* @param char * data : le Data
-	* @param uint8_t t : le type du Data
-	* @param char * donnees : les données
-	* @param int taille : la taille des données
-	* @return la taille du Data
-	*/
-int setData_Donnees(char * data, uint8_t t, char * donnees, int taille);
 
 
 /*Ack*/

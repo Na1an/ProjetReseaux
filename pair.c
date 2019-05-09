@@ -79,7 +79,9 @@ struct Event * premier_Event(struct Index_Voisin * iv, uint64_t id) {
 	memset(e, 0, sizeof(struct Event));
 
 	gettimeofday(&(e->tv), NULL);
-	e->dest = iv;
+	e->dest = malloc(sizeof(struct Index_Voisin));
+	memset(e->dest, 0, sizeof(struct Index_Voisin));
+	memcpy(e->dest, iv, sizeof(struct Index_Voisin));
 	e->tlv = malloc(BUF_SIZE);
 	e->tlv_len = createHello_short(e->tlv, id);
 
@@ -188,15 +190,15 @@ int traitement_recv(int sock, struct Base * base) {
 		switch(type) {
 
 			case 0 : //Pad1
-				if(VUE) {printf("System Recv :\n\tPad1\n");}
+if(VUE) {printf("System Recv :\n\tPad1\n");}
 				break;
 
 			case 1 : //PadN
-				if(VUE) {printf("System Recv :\n\tPadN\n");}
+if(VUE) {printf("System Recv :\n\tPadN\n");}
 				break;
 
 			case 2 : //Hello
-printf("HELLO\n");
+if(DEBUG) {printf("HELLO\n");}
 				if(tlv_len == 8 || (tlv_len == 16 && base->id == getHello_long_Destination_Id(tlv))) {
 					for(
 						l = base->list_voisin;
@@ -204,14 +206,13 @@ printf("HELLO\n");
 						l = l->suite
 					);
 					if(l != NULL) {//Déjà Voisin
-printf("DEJA VOISIN\n");
+if(DEBUG) {printf("DEJA VOISIN\n");}
 						v = VOISIN(l);
 						v->date = now;
 						if(tlv_len == 16) {v->date_long = now;}//Long
 						
 					} else {//Nouveau Voisin
-printf("NEW VOISIN\n");
-
+if(DEBUG) {printf("NEW VOISIN\n");}
 						rmVoisin(iv_actuel, base);
 
 						//On l'ajoute au Voisin
@@ -223,7 +224,6 @@ printf("NEW VOISIN\n");
 						v->id = getHello_Source_Id(tlv);
 						v->date = now;
 						if(tlv_len == 16) {v->date_long = now;}//Long
-
 						base->list_voisin = add_List(v, base->list_voisin);
 
 						//On lui envoie des Hello_long
@@ -242,53 +242,53 @@ printf("NEW VOISIN\n");
 				break;
 
 			case 3 : //Neighbour
-printf("NEIGHTBOUR\n");
+if(DEBUG) {printf("NEIGHTBOUR\n");}
 				iv = malloc(sizeof(struct Index_Voisin));
 				memset(iv, 0, sizeof(struct Index_Voisin));
 				getNeighbour_Ip(tlv, &(iv->ip));
 				iv->port = getNeighbour_Port(tlv);
-printf("NEIGHTBOUR1\n");
+if(DEBUG) {printf("NEIGHTBOUR1\n");}
 				for(
 					l = base->list_voisin_potentiel;
 					l != NULL && memcmp(I_VOISIN(l), iv, sizeof(struct Index_Voisin)) != 0;
 					l = l->suite
 				);
-printf("NEIGHTBOUR2\n");
+if(DEBUG) {printf("NEIGHTBOUR2\n");}
 				for(
 					aux = base->list_voisin;
 					aux != NULL && memcmp(VOISIN(aux)->index, iv, sizeof(struct Index_Voisin)) != 0;
 					aux = aux->suite
 				);
-printf("NEIGHTBOUR3\n");
+if(DEBUG) {printf("NEIGHTBOUR3\n");}
 				if(l != NULL || aux != NULL) {//Déjà Connu(e)
-					free(iv);break;
+					free(iv);
 				} else {//On l ajoute au Voisin Potentiel
 					base->list_voisin_potentiel = add_List(iv, base->list_voisin_potentiel);
 				}
-printf("NEIGHTBOUR4\n");
+if(DEBUG) {printf("NEIGHTBOUR4\n");}
 
 				break;
 
 			case 4 : //Data
-printf("DATA\n");
+if(DEBUG) {printf("DATA\n");}
 				id = malloc(sizeof(struct Index_Donnee));
 				memset(id, 0, sizeof(struct Index_Donnee));
 				id->id = getData_Sender_Id(tlv);
 				id->nonce = getData_Nonce(tlv);
-printf("DATA1\n");
+
+if(DEBUG) {printf("DATA1\n");}
 				for(
 					l = base->list_data;
-					l->suite != base->list_data && I_DONNEE(l) != NULL && memcmp(I_DONNEE(l), id, sizeof(struct Index_Donnee)) != 0;
-				);
-printf("DATA2\n");
+					l->suite != base->list_data && (I_DONNEE(l) == NULL || memcmp(I_DONNEE(l), id, sizeof(struct Index_Donnee))) != 0;
+					l = l->suite
+				) ;
+if(DEBUG) {printf("DATA2\n");}
 
 				if(l->suite == base->list_data &&
 				(I_DONNEE(l) == NULL || memcmp(I_DONNEE(l), id, sizeof(struct Index_Donnee)) != 0)) {
-
+if(getData_Type(tlv) == 0) {memcpy(txt, getData_Donnees(tlv), getData_Donnees_Taille(tlv));printf("%s\n", txt);}
 					if(I_DONNEE(l) != NULL) {free(I_DONNEE(l));}
-					l->objet = malloc(sizeof(struct Index_Donnee));
-					memset(I_DONNEE(l), 0, sizeof(struct Index_Donnee));
-					memcpy(I_DONNEE(l), id, sizeof(struct Index_Donnee));
+					l->objet = id;
 
 					gettimeofday(&tv, NULL);
 					for(l = base->list_voisin; l != NULL; l = l->suite) {
@@ -304,10 +304,11 @@ printf("DATA2\n");
 							memcpy(e->tlv, tlv, tlv_len);
 							e->tlv_len = tlv_len;
 							base->list_event = add_List_Event(e, base->list_event);
+if(DEBUG) {printf("DATA3.5\n");}
 						}
 					}
+if(DEBUG) {printf("DATA3\n");}
 				}
-printf("DATA3\n");
 
 				//On acquitte l envoyeur
 
@@ -322,25 +323,23 @@ printf("DATA3\n");
 				base->list_event = add_List_Event(e, base->list_event);
 
 				type = 5;//On n envoie pas a l envoyeur
-printf("DATA4\n");
+if(DEBUG) {printf("DATA4\n");}
 
 			case 5 : //Ack :
-printf("ACK\n");
+if(DEBUG) {printf("ACK\n");}
 				if(base->list_event != NULL) {
 					for(l = base->list_event; l->suite != NULL; l = l->suite) {
-printf("ACK2\n");
+if(DEBUG) {printf("ACK2\n");}
 						e = EVENT(l->suite);
 						if(e != NULL &&
 						memcmp(e->dest, iv_actuel, sizeof(struct Index_Voisin)) == 0 &&
 						getTlv_Type(e->tlv) == 4 &&
 						getData_Sender_Id(e->tlv) == getData_Sender_Id(tlv) &&
 						getData_Nonce(e->tlv) == getData_Nonce(tlv)) {
-printf("ACK3\n");
+if(DEBUG) {printf("ACK3\n");}
 							aux = l->suite;
 							l->suite = aux->suite;
-							free(EVENT(aux)->dest);
-							free(EVENT(aux)->tlv);
-							free(EVENT(aux));
+							clear_Event(EVENT(aux));
 							free(aux);
 						}
 					}
@@ -353,38 +352,42 @@ printf("ACK3\n");
 					getData_Nonce(e->tlv) == getData_Nonce(tlv)) {
 						l = base->list_event;
 						base->list_event = l->suite;
-						free(EVENT(l));
+						clear_Event(EVENT(l));
 						free(l);
 					}
 				}
 						
-printf("ACK1\n");
+if(DEBUG) {printf("ACK1\n");}
 				break;
 
 			case 6 : 
 				if(VUE) {
 					memcpy(txt, getGoAway_Message(tlv), getGoAway_Message_Taille(tlv));
-					printf("System Recv :\n\tGoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(tlv), txt);
+if(VUE) {printf("System Recv :\n\tGoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(tlv), txt);}
 				}
 				break;
 
 			case 7 : 
 				if(VUE) {
 					memcpy(txt, getWarning_Message(tlv), getWarning_Message_Taille(tlv));
-					printf("System Recv :\n\tWarning : %s\n", txt);
+if(VUE) {printf("System Recv :\n\tWarning : %s\n", txt);}
 				}
 				break;
 
 			default : 
-				if(VUE) {printf("System Recv :\n\tTlv Inconnu : type = %"PRIu8"\n", type);}
+if(VUE) {printf("System Recv :\n\tTlv Inconnu : type = %"PRIu8"\n", type);}
 
 		}
 
-		i += (tlv_len+TLV_ENTETE);
+		if(type != 0) {
+			i += (tlv_len+TLV_ENTETE);
+		} else {
+			i++;
+		}
 
 	}
 
-	free(iv_actuel);
+	clear_Index_Voisin(iv_actuel);
 
 	return 0;
 }
@@ -393,10 +396,10 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 
 	if(event == NULL) {return 0;}
 
-	//int rc;
+	//int rc;// Tout les 12 passages (Dans hellolong ? Non)Voir pour Neightbour => Compte Nb Voisin et voir si Peut avoir autre (Sachant helloshort=>enlever
 
 	if(event->dest == NULL) {
-		return 0;//Faire les neigthbours ou les 8 voisins
+		return -1;//Faire les neigthbours ou les 8 voisins
 	}
 
 	memset(msg, 0, BUF_SIZE);
@@ -409,7 +412,7 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 	uint8_t tlv_len;
 
 	char txt[BUF_SIZE];
-	//int k;
+	int k;
 	//struct Index_Voisin * iv;
 	struct Voisin * v ;
 	struct Event * e;
@@ -429,22 +432,26 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 	switch(type) {
 
 		case 0 : //Pad1
-			if(VUE) {printf("System Send :\n\tPad1\n");}
+if(VUE) {printf("System Send :\n\tPad1\n");}
 			break;
 
 		case 1 : //PadN
-			if(VUE) {printf("System Send :\n\tPadN\n");}
+if(VUE) {printf("System Send :\n\tPadN\n");}
 			break;
 
 		case 2 : //Hello
+if(DEBUG) {printf("HELLO\n");}
 			if(tlv_len == 8) {//Short
 				rmVoisin(event->dest, base);
+if(DEBUG) {printf("HELLO1\n");}
 			}
 			if(tlv_len == 16) {//Long
+if(DEBUG) {printf("HELLO2 \n");}
 				v = find_Voisin(event->dest, base->list_voisin);
 				if(v == NULL) {return -1;}
 				gettimeofday(&tv, NULL);
 				if(tvcmp(&v->date, &tv) < 30) {//Encore
+if(DEBUG) {printf("HELLO3\n");}
 					e = malloc(sizeof(struct Event));
 					memset(e, 0, sizeof(struct Event));
 					setEventTime(e, 30);
@@ -456,13 +463,15 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 					e->tlv_len = event->tlv_len;
 					base->list_event = add_List_Event(e, base->list_event);
 				} else {//Mort
+if(DEBUG) {printf("HELLO4\n");}
 					createMsg(msg);
-					event->tlv_len = createGoAway(txt, 2, NULL, 0);
-					if(VUE) {printf("System Send :\nGoAway By Death in 'Hello'\n");}
-					msg_len = setMsg_Body(msg, txt, event->tlv_len);
-					rmVoisin(event->dest, base);
+					k = createGoAway(txt, 2, NULL, 0);
+if(VUE) {printf("System Send :\n\tGoAway By Death in 'Hello'\n");}
+					msg_len = setMsg_Body(msg, txt, k);
+					rmVoisin(event->dest, base);//TODO PROBLEME S EFFACE LUI MEME
 				}
 			}
+if(DEBUG) {printf("HELLO5\n");}
 			break;
 
 		case 3 : //Neighbour//TODO
@@ -497,10 +506,10 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 				base->list_event = add_List_Event(e, base->list_event);
 			} else {//Mort
 				createMsg(msg);
-				event->tlv_len = createGoAway(txt, 2, NULL, 0);
-				if(VUE) {printf("System Send :\nGoAway By Death in 'Data'\n");}
-				msg_len = setMsg_Body(msg, txt, event->tlv_len);
-				rmVoisin(event->dest, base);
+				k = createGoAway(txt, 2, NULL, 0);
+if(VUE) {printf("System Send :\n\tGoAway By Death in 'Data'\n");}
+				msg_len = setMsg_Body(msg, txt, k);
+				rmVoisin(event->dest, base);//TODO PROBLEME S EFFACE LUI MEME
 			}
 			break;
 
@@ -511,19 +520,19 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 		case 6 : 
 			if(VUE) {
 				memcpy(txt, getGoAway_Message(event->tlv), getGoAway_Message_Taille(event->tlv));
-				printf("System Send :\n\tGoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(event->tlv), txt);
+if(VUE) {printf("System Send :\n\tGoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(event->tlv), txt);}
 			}
 			break;
 
 		case 7 : 
 			if(VUE) {
 				memcpy(txt, getWarning_Message(event->tlv), getWarning_Message_Taille(event->tlv));
-				printf("System Send :\n\tWarning : %s\n", txt);
+if(VUE) {printf("System Send :\n\tWarning : %s\n", txt);}
 			}
 			break;
 
 		default : 
-			if(VUE) {printf("System Send :\n\tTlv Inconnu\n");}
+if(VUE) {printf("System Send :\n\tTlv Inconnu\n");}
 	}
 
 	return msg_len;
@@ -533,10 +542,15 @@ int start(int sock) {
 
 	/* Initialisation */
 
-	int rc;
+	int rc, k;
 	struct timeval tv;
 	struct timeval * mtv(struct timeval * tv) {if(tv->tv_sec < 0) {tv->tv_sec = 0;} if(tv->tv_usec < 0) {tv->tv_usec = 0;} return tv;}
 	fd_set readfds;
+
+	char chat[BUF_SIZE];
+	char data[BUF_SIZE];
+	struct List * l;
+	struct Index_Donnee * ixd;
 
 	char * msg = malloc(BUF_SIZE);
 	int msg_len;
@@ -549,7 +563,9 @@ int start(int sock) {
 	(((uint64_t) rand() << 32) & 0x0000FFFF00000000ull) |
 	(((uint64_t) rand() << 48) & 0xFFFF000000000000ull);
 
-	if(VUE) {printf("System :\n\tId = %" PRIu64 "\n", id);}
+if(VUE) {printf("System :\n\tId = %" PRIu64 "\n", id);}
+
+	uint32_t nonce;
 
 	struct sockaddr_in6 dest_addr;
 
@@ -557,17 +573,21 @@ int start(int sock) {
 
 	struct Event * event_current = NULL;
 	struct Event * event_next = NULL;
+	struct Event * e;
 
-	restart: /*if(SHOWPATH) {*/printf("RESTART !\n");//}
+	restart: 
+if(SHOWPATH) {printf("RESTART !\n");}
 
 	rc = setBase(&base, id);
-	if(rc < 0) {return -1;}
+	if(rc < 0) {return -1;}goto fin;
 
 	/* Boucle */
 
-	suivant: if(SHOWPATH) {printf("SUIVANT !\n");}
+	suivant: 
+if(SHOWPATH) {printf("SUIVANT !\n");}
 
-	if(base.list_event == NULL) {
+	/*if(base.list_event == NULL) {
+		clear_Base(&base);
 		goto restart;
 	}
 
@@ -575,36 +595,41 @@ int start(int sock) {
 		event_next = EVENT(base.list_event);
 	}
 
+	if(event_current != NULL) {clear_Event(event_current);}
+
 	event_current = event_next;//Non NULL
 
+	l = base.list_event;
 	base.list_event = base.list_event->suite;
-printf("Debut traitement send\n");
+	free(l);
+
+if(DEBUG) {printf("Debut traitement send\n");}
 
 	msg_len = traitement_send(event_current, &base, msg);
-printf("Fin traitement send\n");
+if(DEBUG) {printf("Fin traitement send : %d\n", msg_len);}*/
 
 	renvoie: if(SHOWPATH) {printf("RENVOIE !\n");}
 
-	if(event_current->dest != NULL && msg_len != -1) {
+	/*if(event_current->dest != NULL && msg_len != -1) {
 
-		if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
+if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
 
 		get_voisin_addr(event_current->dest, &dest_addr);
 
 		rc = sendto(sock, msg, msg_len, 0, (struct sockaddr *)&dest_addr, (socklen_t)sizeof(struct sockaddr_in6));
 
-	}
+	}*/
 
-	encore: if(SHOWPATH) {printf("ENCORE !\n");}
+encore: if(SHOWPATH) {printf("ENCORE !\n");}
 
-	if(base.list_event == NULL) {
+	/*if(base.list_event == NULL) {
 		event_next = NULL;
 	} else {
 		event_next = EVENT(base.list_event);
-	}//printf("GOT IT !!%d\n", base.list_event == NULL);
+	}*/
 
 	if(event_next == NULL) {
-		if(DEBUG) {printf("event_next == NULL\n");}
+if(DEBUG) {printf("event_next == NULL\n");}
 		tv.tv_sec = 60;
 		tv.tv_usec = 0;
 	} else {
@@ -612,10 +637,11 @@ printf("Fin traitement send\n");
 		tv.tv_sec = (event_next->tv).tv_sec - tv.tv_sec;
 		tv.tv_usec = (event_next->tv).tv_usec - tv.tv_usec;
 
-		if(DEBUG) {printf("TIME : sec : %ld, usec : %ld\n", tv.tv_sec, tv.tv_usec);}
+if(DEBUG) {printf("TIME : sec : %ld, usec : %ld\n", tv.tv_sec, tv.tv_usec);}
 	}
 
 	FD_ZERO(&readfds);
+	FD_SET(0, &readfds);
 	FD_SET(sock, &readfds);
 
 	rc = select(sock + 1, &readfds, NULL, NULL, mtv(&tv));
@@ -624,20 +650,64 @@ printf("Fin traitement send\n");
 
 	if(rc > 0) {
 		if(FD_ISSET(sock, &readfds)) {
-printf("traitement recv\n");
-			switch(traitement_recv(sock, &base)) {//Voir pour envoyer warning ... 2 = msg Ignoré
+if(DEBUG) {printf("traitement recv\n");}
+			switch(traitement_recv(sock, &base)) {
 				case 1 : goto renvoie;
 				case -1 : return -1;
 				default : goto encore;
 			}
-			//////////////////////////////////////////////////////////////////////////////TODO
+		} else if(FD_ISSET(0, &readfds)) {
+			memset(chat, 0, BUF_SIZE);
+			memset(data, 0, BUF_SIZE);
+			k = snprintf(chat, BUF_SIZE, "YucheB : ");
+			rc = read(0, chat+k, BUF_SIZE-k);
+			if(rc < 0) {
+				printf("System Erreur :\n\tLe message n'a pas été envoyé\n");
+				goto encore;
+			} else if(memcmp("EXIT", chat+k, 4) != 0) {
+
+				nonce = (((uint32_t) rand() <<  0) & 0x0000FFFFull) | (((uint32_t) rand() << 16) & 0xFFFF0000ull);
+				rc = createData(data, base.id, nonce, 0, chat, rc+k);
+				if(rc < 0) {
+					printf("System Erreur :\n\tLe message est trop long\n");
+					goto encore;
+				}
+				gettimeofday(&tv, NULL);
+				for(l = base.list_voisin; l != NULL; l = l->suite) {
+					if(tvcmp(&VOISIN(l)->date_long, &tv) < 30) {
+						e = malloc(sizeof(struct Event));
+						memset(e, 0, sizeof(struct Event));
+						e->opt = 1;
+						setEventTime(e, rand()%2);
+						e->dest = malloc(sizeof(struct Index_Voisin));
+						memset(e->dest, 0, sizeof(struct Index_Voisin));
+						memcpy(e->dest, VOISIN(l)->index, sizeof(struct Index_Voisin));
+						e->tlv = malloc(BUF_SIZE);
+						memcpy(e->tlv, data, rc);
+						e->tlv_len = rc;
+						base.list_event = add_List_Event(e, base.list_event);
+					}
+				}
+
+				ixd = malloc(sizeof(struct Index_Donnee));
+				memset(ixd, 0, sizeof(struct Index_Donnee));
+				ixd->id = base.id;
+				ixd->nonce = nonce;
+				for(
+					l = base.list_data;
+					l->suite != base.list_data;
+					l = l->suite
+				);
+				if(I_DONNEE(l) != NULL) {free(I_DONNEE(l));}
+				l->objet = ixd;
+
+				goto encore;
+			}
 		} else {perror("Descripteur de fichier inattendu");return -1;}
 	} else {/* timeout */
-		//if(DEBUG) {printf("Encore !\n");}
 		goto suivant;
-	}	
-
-	//clear_Event(get_Voisin);//TODO ?
+	}
+	fin:
 
 	free(msg);
 
@@ -666,49 +736,16 @@ int main() {
 
 /* Fonctions Auxiliaires */
 
-int tvcmp(struct timeval * tv1, struct timeval * tv2) {
-	return tv2->tv_sec - tv1->tv_sec;
-}
-
-int setEventTime(struct Event * e, int sec) {
-	gettimeofday(&(e->tv), NULL);
-	(e->tv).tv_sec += sec;
-	return 0;
-}
-
-struct List * add_List_Event(struct Event * e, struct List * l) {
-	if(l != NULL && tvcmp(&(e->tv), &(EVENT(l)->tv)) < 0) {
-		l->suite = add_List_Event(e, l->suite);
-		return l;
-	} else {
-		return add_List(e, l);
-	}
-}
-
-int clear_Event(struct Event * e) {
-	free(e->dest);
-	free(e->tlv);
-	free(e);
-	return 0;
-}
-
 int clear_Base(struct Base * base) {
 	clear_List(base->list_voisin_potentiel, (f_obj)&clear_Index_Voisin);
+
 	clear_List(base->list_voisin, (f_obj)&clear_Voisin);
 
 	clear_List(base->list_event, (f_obj)&clear_Event);
 
-	clear_List(base->list_data, (f_obj)&clear_Donnee);
-	free(base);
-	return 0;
-}
+	clear_Circ_List(base->list_data, (f_obj)&clear_Index_Donnee);
 
-struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l) {
-	if(l == NULL) {return NULL;}
-	if(VOISIN(l) != NULL && memcmp(VOISIN(l)->index, iv, sizeof(struct Index_Voisin)) == 0) {
-		return VOISIN(l);
-	}
-	return find_Voisin(iv, l->suite);
+	return 0;
 }
 
 int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
@@ -719,14 +756,14 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 			if(I_VOISIN(l->suite) != NULL && memcmp(I_VOISIN(l->suite), iv, sizeof(struct Index_Voisin)) == 0) {
 				aux = l->suite;
 				l->suite = aux->suite;
-				free(I_VOISIN(aux));
+				clear_Index_Donnee(I_DONNEE(aux));
 				free(aux);
 			}
 		}
 		if(I_VOISIN(b->list_voisin_potentiel) != NULL && memcmp(I_VOISIN(b->list_voisin_potentiel), iv, sizeof(struct Index_Voisin)) == 0) {
 			l = b->list_voisin_potentiel;
 			b->list_voisin_potentiel = l->suite;
-			free(I_VOISIN(l));
+			clear_Index_Donnee(I_DONNEE(l));
 			free(l);
 		}
 	}
@@ -735,17 +772,15 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 			if(VOISIN(l->suite) != NULL && VOISIN(l->suite)->index != NULL && memcmp(VOISIN(l->suite)->index, iv, sizeof(struct Index_Voisin)) == 0) {
 				aux = l->suite;
 				l->suite = aux->suite;
-				free(VOISIN(aux)->index);
-				free(VOISIN(aux));
+				clear_Voisin(VOISIN(aux));
 				free(aux);
 			}
 		}
 		if(VOISIN(b->list_voisin) != NULL && VOISIN(b->list_voisin)->index != NULL && memcmp(VOISIN(b->list_voisin)->index, iv, sizeof(struct Index_Voisin)) == 0) {
-				l = b->list_voisin;
-				b->list_voisin = l->suite;
-				free(VOISIN(l)->index);
-				free(VOISIN(l));
-				free(l);
+			l = b->list_voisin;
+			b->list_voisin = l->suite;
+			clear_Voisin(VOISIN(l));
+			free(l);
 		}
 	}
 	if(b->list_event != NULL) {
@@ -753,29 +788,19 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 			if(EVENT(l->suite) != NULL && EVENT(l->suite)->dest != NULL && memcmp(EVENT(l->suite)->dest, iv, sizeof(struct Index_Voisin)) == 0) {
 				aux = l->suite;
 				l->suite = aux->suite;
-				free(EVENT(aux)->dest);
-				free(EVENT(aux)->tlv);
-				free(EVENT(aux));
+				clear_Event(EVENT(aux));
 				free(aux);
 			}
 		}
 		if(EVENT(b->list_event) != NULL && EVENT(b->list_event)->dest != NULL && memcmp(EVENT(b->list_event)->dest, iv, sizeof(struct Index_Voisin)) == 0) {
 			l = b->list_event;
 			b->list_event = l->suite;
-			free(EVENT(l)->dest);
-			free(EVENT(l)->tlv);
-			free(EVENT(l));
+			clear_Event(EVENT(l));
 			free(l);
 		}
 	}
 	return 0;
 }
-
-
-
-
-
-
 
 
 

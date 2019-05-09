@@ -37,49 +37,12 @@ struct Base {
 	struct List * list_data;
 	struct List * list_event;
 };
-
-/**
-	* Evènement d'envoie d'un tlv à un destinataire
-	* @param struct timeval tv : date d'envoie
-	* @param int opt : option
-	* @param struct Index_Voisin * dest : le destinataire
-	* @param char * tlv : le tlv
-	* @param int tlv_len : taille du tlv
-	*/
-struct Event {
-	struct timeval tv;
-	int opt;
-	struct Index_Voisin * dest;
-	char * tlv;
-	int tlv_len;
-};
-
-/**
-	Atteint l objet Event d'une liste
-	*/
-#define EVENT(_l) ((struct Event *)((_l)->objet))
-
-/**
-	* Efface un Event de la mémoire
-	* @param struct Event * e : le Event
-	* @return 0
-	*/
-int clear_Event(struct Event * e);
-
 /**
 	* Efface une Base de la mémoire
 	* @param struct Base * base : la Base
 	* @return 0
 	*/
 int clear_Base(struct Base * base);
-
-/**
-	* Ajoute un Event dans une List de Event
-	* @param struct Event * e : le Event
-	* @param struct List * l : la List
-	* @return 0
-	*/
-struct List * add_List_Event(struct Event * e, struct List * l);
 
 /**
 	* Compare 2 timevals
@@ -90,16 +53,11 @@ struct List * add_List_Event(struct Event * e, struct List * l);
 int tvcmp(struct timeval * tv1, struct timeval * tv2);
 
 /**
-	* Insert un temps dans un Event
-	* @param struct Event * e : le Event
-	* @param int sec : le nombre de second restant 
-	* @param int usec : le nombre de micro-second restant 
+	* Efface un Voisin d'une Base
+	* @param struct Index_Voisin * iv : l'Index_Voisin du Voisin
+	* @param struct Base * b : la Base
 	* @return 0
 	*/
-int setEventTime(struct Event * e, int sec);
-
-struct Voisin * find_Voisin(struct Index_Voisin * iv, struct List * l);
-
 int rmVoisin(struct Index_Voisin * iv, struct Base * b);
 
 #endif

@@ -28,7 +28,7 @@
 /**
 	* Si l'on veut afficher les informations de debugage
 	*/
-#define DEBUG 1
+#define DEBUG 0
 
 /**
 	* Si l'on veut afficher des informations supplémentaires
