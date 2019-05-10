@@ -88,19 +88,24 @@ struct Event * premier_Event(struct Index_Voisin * iv, uint64_t id) {
 	return e;
 }
 
-int setBase(struct Base * b, uint64_t id) {
+int setBase(struct Base * b, uint64_t id, struct Index_Voisin * piv) {
+
+	struct Index_Voisin * iv = malloc(sizeof(struct Index_Voisin));
+	memset(iv, 0, sizeof(struct Index_Voisin));
+	memcpy(iv, piv, sizeof(struct Index_Voisin));
+
 	memset(b, 0, sizeof(struct Base));
 
 	b->id = id;
 
-	b->list_voisin_potentiel = add_List(premier_Voisin(), NULL);
+	b->list_voisin_potentiel = add_List(iv, NULL);
 	if(b->list_voisin_potentiel == NULL) {return -1;}
 
 	b->list_voisin = NULL;
 
 	b->list_data = create_Circ_List(32);
 
-	b->list_event = add_List(premier_Event(I_VOISIN(b->list_voisin_potentiel), id), NULL);
+	b->list_event = add_List(premier_Event(iv, id), NULL);
 
 	return 0;
 }
@@ -517,14 +522,14 @@ if(VUE) {printf("System Send :\n\tGoAway By Death in 'Data'\n");}
 			/* Rien : Tout est fait dans traitement_recv */
 			break;
 
-		case 6 : 
+		case 6 : //GoAway :
 			if(VUE) {
 				memcpy(txt, getGoAway_Message(event->tlv), getGoAway_Message_Taille(event->tlv));
 if(VUE) {printf("System Send :\n\tGoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(event->tlv), txt);}
 			}
 			break;
 
-		case 7 : 
+		case 7 : //Warning :
 			if(VUE) {
 				memcpy(txt, getWarning_Message(event->tlv), getWarning_Message_Taille(event->tlv));
 if(VUE) {printf("System Send :\n\tWarning : %s\n", txt);}
@@ -569,6 +574,8 @@ if(VUE) {printf("System :\n\tId = %" PRIu64 "\n", id);}
 
 	struct sockaddr_in6 dest_addr;
 
+	struct Index_Voisin * piv = premier_Voisin();
+
 	struct Base base;
 
 	struct Event * event_current = NULL;
@@ -578,15 +585,15 @@ if(VUE) {printf("System :\n\tId = %" PRIu64 "\n", id);}
 	restart: 
 if(SHOWPATH) {printf("RESTART !\n");}
 
-	rc = setBase(&base, id);
-	if(rc < 0) {return -1;}goto fin;
+	rc = setBase(&base, id, piv);
+	if(rc < 0) {return -1;}
 
 	/* Boucle */
 
 	suivant: 
 if(SHOWPATH) {printf("SUIVANT !\n");}
 
-	/*if(base.list_event == NULL) {
+	if(base.list_event == NULL) {
 		clear_Base(&base);
 		goto restart;
 	}
@@ -606,11 +613,12 @@ if(SHOWPATH) {printf("SUIVANT !\n");}
 if(DEBUG) {printf("Debut traitement send\n");}
 
 	msg_len = traitement_send(event_current, &base, msg);
-if(DEBUG) {printf("Fin traitement send : %d\n", msg_len);}*/
+if(DEBUG) {printf("Fin traitement send : %d\n", msg_len);}
 
-	renvoie: if(SHOWPATH) {printf("RENVOIE !\n");}
+	renvoie: 
+if(SHOWPATH) {printf("RENVOIE !\n");}
 
-	/*if(event_current->dest != NULL && msg_len != -1) {
+	if(event_current->dest != NULL && msg_len != -1) {
 
 if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
 
@@ -618,19 +626,19 @@ if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
 
 		rc = sendto(sock, msg, msg_len, 0, (struct sockaddr *)&dest_addr, (socklen_t)sizeof(struct sockaddr_in6));
 
-	}*/
+	}
 
-encore: if(SHOWPATH) {printf("ENCORE !\n");}
+	encore: if(SHOWPATH) {printf("ENCORE !\n");}
 
-	/*if(base.list_event == NULL) {
+	if(base.list_event == NULL) {
 		event_next = NULL;
 	} else {
 		event_next = EVENT(base.list_event);
-	}*/
+	}
 
 	if(event_next == NULL) {
 if(DEBUG) {printf("event_next == NULL\n");}
-		tv.tv_sec = 60;
+		tv.tv_sec = 2;
 		tv.tv_usec = 0;
 	} else {
 		gettimeofday(&tv, NULL);
@@ -708,6 +716,11 @@ if(DEBUG) {printf("traitement recv\n");}
 		goto suivant;
 	}
 	fin:
+if(SHOWPATH) {printf("FIN !\n");}
+
+	if(event_current != NULL) {clear_Event(event_current);}
+
+	clear_Index_Voisin(piv);
 
 	free(msg);
 
