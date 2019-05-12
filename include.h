@@ -33,7 +33,7 @@
 /**
 	* Si l'on veut afficher des informations supplémentaires
 	*/
-#define VUE 1
+#define VUE 0
 
 /**
 	* Si l'on veut afficher le chemin par lequel le programme passe

@@ -60,4 +60,13 @@ int tvcmp(struct timeval * tv1, struct timeval * tv2);
 	*/
 int rmVoisin(struct Index_Voisin * iv, struct Base * b);
 
+/**
+	* Cherche un Index_Voisin dans une Base
+	* @param struct Index_Voisin * iv : l'Index_Voisin du Voisin a ne pas prendre
+	* @param struct Base * base : la Base
+	* @param int * k : l index auquelle démarrer
+	* @return 0
+	*/
+struct Index_Voisin * take_Voisin (struct Index_Voisin * iv, struct Base * base, int * k);
+
 #endif

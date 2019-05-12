@@ -103,7 +103,7 @@ int setBase(struct Base * b, uint64_t id, struct Index_Voisin * piv) {
 
 	b->list_voisin = NULL;
 
-	b->list_data = create_Circ_List(32);
+	b->list_data = create_Circ_List(128);
 
 	b->list_event = add_List(premier_Event(iv, id), NULL);
 
@@ -247,31 +247,30 @@ if(DEBUG) {printf("NEW VOISIN\n");}
 				break;
 
 			case 3 : //Neighbour
-if(DEBUG) {printf("NEIGHTBOUR\n");}
+if(DEBUG) {printf("NEIGHBOUR\n");}
 				iv = malloc(sizeof(struct Index_Voisin));
 				memset(iv, 0, sizeof(struct Index_Voisin));
 				getNeighbour_Ip(tlv, &(iv->ip));
 				iv->port = getNeighbour_Port(tlv);
-if(DEBUG) {printf("NEIGHTBOUR1\n");}
+if(DEBUG) {printf("NEIGHBOUR1\n");}
 				for(
 					l = base->list_voisin_potentiel;
 					l != NULL && memcmp(I_VOISIN(l), iv, sizeof(struct Index_Voisin)) != 0;
 					l = l->suite
 				);
-if(DEBUG) {printf("NEIGHTBOUR2\n");}
+if(DEBUG) {printf("NEIGHBOUR2\n");}
 				for(
 					aux = base->list_voisin;
 					aux != NULL && memcmp(VOISIN(aux)->index, iv, sizeof(struct Index_Voisin)) != 0;
 					aux = aux->suite
 				);
-if(DEBUG) {printf("NEIGHTBOUR3\n");}
+if(DEBUG) {printf("NEIGHBOUR3\n");}
 				if(l != NULL || aux != NULL) {//Déjà Connu(e)
 					free(iv);
 				} else {//On l ajoute au Voisin Potentiel
 					base->list_voisin_potentiel = add_List(iv, base->list_voisin_potentiel);
 				}
-if(DEBUG) {printf("NEIGHTBOUR4\n");}
-
+if(DEBUG) {printf("NEIGHBOUR4\n");}
 				break;
 
 			case 4 : //Data
@@ -289,15 +288,17 @@ if(DEBUG) {printf("DATA1\n");}
 				) ;
 if(DEBUG) {printf("DATA2\n");}
 
-				if(l->suite == base->list_data &&
+				if(id->id != base->id && l->suite == base->list_data &&
 				(I_DONNEE(l) == NULL || memcmp(I_DONNEE(l), id, sizeof(struct Index_Donnee)) != 0)) {
 if(getData_Type(tlv) == 0) {memcpy(txt, getData_Donnees(tlv), getData_Donnees_Taille(tlv));printf("%s\n", txt);}
 					if(I_DONNEE(l) != NULL) {free(I_DONNEE(l));}
-					l->objet = id;
+					l->objet = malloc(sizeof(struct Index_Donnee));
+					memset(l->objet, 0, sizeof(struct Index_Donnee));
+					memcpy(l->objet, id, sizeof(struct Index_Donnee));
 
 					gettimeofday(&tv, NULL);
 					for(l = base->list_voisin; l != NULL; l = l->suite) {
-						if(tvcmp(&VOISIN(l)->date_long, &tv) < 30) {
+						if(tvcmp(&VOISIN(l)->date_long, &tv) < 120) {
 							e = malloc(sizeof(struct Event));
 							memset(e, 0, sizeof(struct Event));
 							e->opt = 1;
@@ -327,13 +328,15 @@ if(DEBUG) {printf("DATA3\n");}
 				e->tlv_len = createAck(e->tlv, id->id, id->nonce);
 				base->list_event = add_List_Event(e, base->list_event);
 
+				clear_Index_Donnee(id);
+
 				type = 5;//On n envoie pas a l envoyeur
 if(DEBUG) {printf("DATA4\n");}
 
 			case 5 : //Ack :
 if(DEBUG) {printf("ACK\n");}
 				if(base->list_event != NULL) {
-					for(l = base->list_event; l->suite != NULL; l = l->suite) {
+					for(l = base->list_event; l != NULL && l->suite != NULL; l = l->suite) {//Probleme HERE
 if(DEBUG) {printf("ACK2\n");}
 						e = EVENT(l->suite);
 						if(e != NULL &&
@@ -365,14 +368,19 @@ if(DEBUG) {printf("ACK3\n");}
 if(DEBUG) {printf("ACK1\n");}
 				break;
 
-			case 6 : 
+			case 6 : //GoAway :
 				if(VUE) {
+					iv = malloc(sizeof(struct Index_Voisin));
+					memset(iv, 0, sizeof(struct Index_Voisin));
+					memcpy(iv, iv_actuel, sizeof(struct Index_Voisin));
+					rmVoisin(iv, base);//On l ajoute au Voisin Potentiel
+					base->list_voisin_potentiel = add_List(iv, base->list_voisin_potentiel);
 					memcpy(txt, getGoAway_Message(tlv), getGoAway_Message_Taille(tlv));
 if(VUE) {printf("System Recv :\n\tGoAway : Code %"PRIu8", Message : %s\n", getGoAway_Code(tlv), txt);}
 				}
 				break;
 
-			case 7 : 
+			case 7 : //Warning :
 				if(VUE) {
 					memcpy(txt, getWarning_Message(tlv), getWarning_Message_Taille(tlv));
 if(VUE) {printf("System Recv :\n\tWarning : %s\n", txt);}
@@ -399,12 +407,14 @@ if(VUE) {printf("System Recv :\n\tTlv Inconnu : type = %"PRIu8"\n", type);}
 
 int traitement_send(struct Event * event, struct Base * base, char * msg) {
 
+	static int i = 0;
+	static int j = 0;
+if(DEBUG) {printf("i : %d, j : %d\n", i, j);}
+
 	if(event == NULL) {return 0;}
 
-	//int rc;// Tout les 12 passages (Dans hellolong ? Non)Voir pour Neightbour => Compte Nb Voisin et voir si Peut avoir autre (Sachant helloshort=>enlever
-
 	if(event->dest == NULL) {
-		return -1;//Faire les neigthbours ou les 8 voisins
+		return -1;
 	}
 
 	memset(msg, 0, BUF_SIZE);
@@ -418,10 +428,10 @@ int traitement_send(struct Event * event, struct Base * base, char * msg) {
 
 	char txt[BUF_SIZE];
 	int k;
-	//struct Index_Voisin * iv;
+	struct Index_Voisin * iv;
 	struct Voisin * v ;
 	struct Event * e;
-	//struct List * l;
+	struct List * l;
 	//struct List * aux;
 	struct timeval tv;
 	
@@ -455,7 +465,7 @@ if(DEBUG) {printf("HELLO2 \n");}
 				v = find_Voisin(event->dest, base->list_voisin);
 				if(v == NULL) {return -1;}
 				gettimeofday(&tv, NULL);
-				if(tvcmp(&v->date, &tv) < 30) {//Encore
+				if(tvcmp(&v->date, &tv) < 120) {//Encore
 if(DEBUG) {printf("HELLO3\n");}
 					e = malloc(sizeof(struct Event));
 					memset(e, 0, sizeof(struct Event));
@@ -466,14 +476,41 @@ if(DEBUG) {printf("HELLO3\n");}
 					e->tlv = malloc(BUF_SIZE);
 					memcpy(e->tlv, event->tlv, event->tlv_len);
 					e->tlv_len = event->tlv_len;
-					base->list_event = add_List_Event(e, base->list_event);
+					base->list_event = add_List_Event(e, base->list_event);//Faire ici les neightbours
 				} else {//Mort
 if(DEBUG) {printf("HELLO4\n");}
 					createMsg(msg);
 					k = createGoAway(txt, 2, NULL, 0);
 if(VUE) {printf("System Send :\n\tGoAway By Death in 'Hello'\n");}
 					msg_len = setMsg_Body(msg, txt, k);
-					rmVoisin(event->dest, base);//TODO PROBLEME S EFFACE LUI MEME
+					rmVoisin(event->dest, base);
+					break;
+				}
+				if(j%3 == 0) {//Tout les 3 Hello_Long
+					iv = take_Voisin (e->dest, base, &i);
+					if(iv != NULL) {
+						k = createNeighbour(txt, iv->ip, iv->port);
+						msg_len = setMsg_Body(msg, txt, k);
+					}
+					j = 0;
+				}
+				j++;
+			}
+
+			if(base->list_voisin_potentiel != NULL) {
+				k = 0;
+if(DEBUG) {printf("Nb Voisin : %d\n", k);}
+				for(l = base->list_voisin; l != NULL; l = l->suite) {k++;}
+				if(k < 8) {
+					e = malloc(sizeof(struct Event));
+					memset(e, 0, sizeof(struct Event));
+					setEventTime(e, 0);
+					e->dest = malloc(sizeof(struct Index_Voisin));
+					memset(e->dest, 0, sizeof(struct Index_Voisin));
+					memcpy(e->dest, I_VOISIN(base->list_voisin_potentiel), sizeof(struct Index_Voisin));
+					e->tlv = malloc(BUF_SIZE);
+					e->tlv_len = createHello_short(e->tlv, base->id);
+					base->list_event = add_List_Event(e, base->list_event);
 				}
 			}
 if(DEBUG) {printf("HELLO5\n");}
@@ -501,7 +538,7 @@ if(DEBUG) {printf("HELLO5\n");}
 				e = malloc(sizeof(struct Event));
 				memset(e, 0, sizeof(struct Event));
 				e->opt = event->opt + 1;
-				setEventTime(e, (2^(event->opt-1)) + rand()%(2^(event->opt-1)));
+				setEventTime(e, (2^((event->opt)-1)) + rand()%(1 + (2^((event->opt)-1))));
 				e->dest = malloc(sizeof(struct Index_Voisin));
 				memset(e->dest, 0, sizeof(struct Index_Voisin));
 				memcpy(e->dest, event->dest, sizeof(struct Index_Voisin));
@@ -514,7 +551,7 @@ if(DEBUG) {printf("HELLO5\n");}
 				k = createGoAway(txt, 2, NULL, 0);
 if(VUE) {printf("System Send :\n\tGoAway By Death in 'Data'\n");}
 				msg_len = setMsg_Body(msg, txt, k);
-				rmVoisin(event->dest, base);//TODO PROBLEME S EFFACE LUI MEME
+				rmVoisin(event->dest, base);
 			}
 			break;
 
@@ -554,6 +591,7 @@ int start(int sock) {
 
 	char chat[BUF_SIZE];
 	char data[BUF_SIZE];
+	char * pointeur;
 	struct List * l;
 	struct Index_Donnee * ixd;
 
@@ -638,7 +676,7 @@ if(DEBUG) {printf("Message Envoyé !\n");printMsg(msg);}
 
 	if(event_next == NULL) {
 if(DEBUG) {printf("event_next == NULL\n");}
-		tv.tv_sec = 2;
+		tv.tv_sec = 120;
 		tv.tv_usec = 0;
 	} else {
 		gettimeofday(&tv, NULL);
@@ -668,56 +706,71 @@ if(DEBUG) {printf("traitement recv\n");}
 			memset(chat, 0, BUF_SIZE);
 			memset(data, 0, BUF_SIZE);
 			k = snprintf(chat, BUF_SIZE, "YucheB : ");
-			rc = read(0, chat+k, BUF_SIZE-k);
+			rc = read(0, chat+k, BUF_SIZE);
 			if(rc < 0) {
 				printf("System Erreur :\n\tLe message n'a pas été envoyé\n");
 				goto encore;
 			} else if(memcmp("EXIT", chat+k, 4) != 0) {
-
-				nonce = (((uint32_t) rand() <<  0) & 0x0000FFFFull) | (((uint32_t) rand() << 16) & 0xFFFF0000ull);
-				rc = createData(data, base.id, nonce, 0, chat, rc+k);
-				if(rc < 0) {
-					printf("System Erreur :\n\tLe message est trop long\n");
-					goto encore;
-				}
-				gettimeofday(&tv, NULL);
-				for(l = base.list_voisin; l != NULL; l = l->suite) {
-					if(tvcmp(&VOISIN(l)->date_long, &tv) < 30) {
-						e = malloc(sizeof(struct Event));
-						memset(e, 0, sizeof(struct Event));
-						e->opt = 1;
-						setEventTime(e, rand()%2);
-						e->dest = malloc(sizeof(struct Index_Voisin));
-						memset(e->dest, 0, sizeof(struct Index_Voisin));
-						memcpy(e->dest, VOISIN(l)->index, sizeof(struct Index_Voisin));
-						e->tlv = malloc(BUF_SIZE);
-						memcpy(e->tlv, data, rc);
-						e->tlv_len = rc;
-						base.list_event = add_List_Event(e, base.list_event);
+				pointeur = chat;printf("%d\n",rc+k);
+				for(k = k+rc; k > 0; k -= (255-13)) {
+					nonce = (((uint32_t) rand() <<  0) & 0x0000FFFFull) | (((uint32_t) rand() << 16) & 0xFFFF0000ull);
+					if(k < (255-13)) {
+						rc = createData(data, base.id, nonce, 0, pointeur, k);//Fin du for
+					} else {
+						rc = createData(data, base.id, nonce, 0, pointeur, (255-13));
+						pointeur += (255-13);
 					}
+if(DEBUG) {printf("rc = %d\n", rc);}
+					gettimeofday(&tv, NULL);
+					for(l = base.list_voisin; l != NULL; l = l->suite) {
+						if(tvcmp(&VOISIN(l)->date_long, &tv) < 120) {
+							e = malloc(sizeof(struct Event));
+							memset(e, 0, sizeof(struct Event));
+							e->opt = 1;
+							setEventTime(e, rand()%2);
+							e->dest = malloc(sizeof(struct Index_Voisin));
+							memset(e->dest, 0, sizeof(struct Index_Voisin));
+							memcpy(e->dest, VOISIN(l)->index, sizeof(struct Index_Voisin));
+							e->tlv = malloc(BUF_SIZE);
+							memcpy(e->tlv, data, rc);
+							e->tlv_len = rc;
+							base.list_event = add_List_Event(e, base.list_event);
+						}
+					}
+
+					ixd = malloc(sizeof(struct Index_Donnee));
+					memset(ixd, 0, sizeof(struct Index_Donnee));
+					ixd->id = base.id;
+					ixd->nonce = nonce;
+					for(
+						l = base.list_data;
+						l->suite != base.list_data;
+						l = l->suite
+					);
+					if(I_DONNEE(l) != NULL) {free(I_DONNEE(l));}
+					l->objet = ixd;
 				}
-
-				ixd = malloc(sizeof(struct Index_Donnee));
-				memset(ixd, 0, sizeof(struct Index_Donnee));
-				ixd->id = base.id;
-				ixd->nonce = nonce;
-				for(
-					l = base.list_data;
-					l->suite != base.list_data;
-					l = l->suite
-				);
-				if(I_DONNEE(l) != NULL) {free(I_DONNEE(l));}
-				l->objet = ixd;
-
 				goto encore;
 			}
 		} else {perror("Descripteur de fichier inattendu");return -1;}
 	} else {/* timeout */
 		goto suivant;
 	}
-	fin:
-if(SHOWPATH) {printf("FIN !\n");}
 
+if(SHOWPATH) {printf("FIN !\n");}
+	rc = fcntl(sock, F_GETFL);
+	if(rc < 0) {perror("fcntls2 - get");return -1;}
+
+	rc = fcntl(sock, F_SETFL, rc & (~O_NONBLOCK));
+	if(rc < 0) {perror("fcntls2 - set");return -1;}
+	createMsg(msg);
+	msg_len = createGoAway(msg, 1, NULL, 0);
+	for(l = base.list_voisin; l != NULL; l = l->suite) {
+		if(VOISIN(l) != NULL && tvcmp(&VOISIN(l)->date, &tv) < 120) {
+			get_voisin_addr(VOISIN(l)->index, &dest_addr);
+			sendto(sock, msg, msg_len, 0, (struct sockaddr *)&dest_addr, (socklen_t)sizeof(struct sockaddr_in6));
+		}
+	}
 	if(event_current != NULL) {clear_Event(event_current);}
 
 	clear_Index_Voisin(piv);
@@ -765,7 +818,7 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 	struct List * l;
 	struct List * aux;
 	if(b->list_voisin_potentiel != NULL) {
-		for(l = b->list_voisin_potentiel; l->suite != NULL; l = l->suite) {
+		for(l = b->list_voisin_potentiel; l != NULL && l->suite != NULL; l = l->suite) {
 			if(I_VOISIN(l->suite) != NULL && memcmp(I_VOISIN(l->suite), iv, sizeof(struct Index_Voisin)) == 0) {
 				aux = l->suite;
 				l->suite = aux->suite;
@@ -781,7 +834,7 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 		}
 	}
 	if(b->list_voisin != NULL) {
-		for(l = b->list_voisin; l->suite != NULL; l = l->suite) {
+		for(l = b->list_voisin; l != NULL && l->suite != NULL; l = l->suite) {
 			if(VOISIN(l->suite) != NULL && VOISIN(l->suite)->index != NULL && memcmp(VOISIN(l->suite)->index, iv, sizeof(struct Index_Voisin)) == 0) {
 				aux = l->suite;
 				l->suite = aux->suite;
@@ -797,7 +850,7 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 		}
 	}
 	if(b->list_event != NULL) {
-		for(l = b->list_event; l->suite != NULL; l = l->suite) {
+		for(l = b->list_event; l != NULL && l->suite != NULL; l = l->suite) {
 			if(EVENT(l->suite) != NULL && EVENT(l->suite)->dest != NULL && memcmp(EVENT(l->suite)->dest, iv, sizeof(struct Index_Voisin)) == 0) {
 				aux = l->suite;
 				l->suite = aux->suite;
@@ -815,5 +868,39 @@ int rmVoisin(struct Index_Voisin * iv, struct Base * b) {
 	return 0;
 }
 
+struct Index_Voisin * take_Voisin (struct Index_Voisin * iv, struct Base * base, int * k) {
+if(DEBUG) {printf("TAKEVOISIN1 k = %d\n", *k);}
+	struct timeval tv;
+	if(base->list_voisin == NULL) {return NULL;}
+	int i = 0;
+	int j = 0;
+	struct List * l = base->list_voisin;
+	while(i < *k || l == NULL) {
+		j++;
+if(DEBUG) {printf("k : %d, i : %d, l == NULL : %d\n", *k, i, l == NULL);}
+		if(l == NULL) {
+			*k -= i;
+			i = 0;
+			l = base->list_voisin;
+		} else {
+			l = l->suite;
+			i++;
+		}
+	}
+	gettimeofday(&tv, NULL);
+	while(tvcmp(&VOISIN(l)->date_long, &tv) > 120) {
+		l = l->suite;
+		if(l == NULL) {
+			*k = 0;
+			return NULL;
+		}
+		(*k)++;
+	}
+	(*k)++;
+if(DEBUG) {printf("TAKEVOISIN2 k = %d\n", *k);}
+	if(memcmp(VOISIN(l)->index, iv, sizeof(struct Index_Voisin)) == 0) {return NULL;}
+	return VOISIN(l)->index;
+}
 
+//Test : Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
