@@ -123,7 +123,6 @@ int get_voisin_addr(struct Index_Voisin * iv, struct sockaddr_in6 * addr) {
 	return 0;
 }
 
-//Faire traitement envoie et traitement recois
 int traitement_recv(int sock, struct Base * base) {
 
 	int rc;
@@ -336,7 +335,7 @@ if(DEBUG) {printf("DATA4\n");}
 			case 5 : //Ack :
 if(DEBUG) {printf("ACK\n");}
 				if(base->list_event != NULL) {
-					for(l = base->list_event; l != NULL && l->suite != NULL; l = l->suite) {//Probleme HERE
+					for(l = base->list_event; l != NULL && l->suite != NULL; l = l->suite) {
 if(DEBUG) {printf("ACK2\n");}
 						e = EVENT(l->suite);
 						if(e != NULL &&
@@ -476,7 +475,7 @@ if(DEBUG) {printf("HELLO3\n");}
 					e->tlv = malloc(BUF_SIZE);
 					memcpy(e->tlv, event->tlv, event->tlv_len);
 					e->tlv_len = event->tlv_len;
-					base->list_event = add_List_Event(e, base->list_event);//Faire ici les neightbours
+					base->list_event = add_List_Event(e, base->list_event);
 				} else {//Mort
 if(DEBUG) {printf("HELLO4\n");}
 					createMsg(msg);
@@ -517,20 +516,7 @@ if(DEBUG) {printf("HELLO5\n");}
 			break;
 
 		case 3 : //Neighbour//TODO
-			/*iv = malloc(sizeof(struct Index_Voisin));
-			memset(iv, 0, sizeof(struct Index_Voisin));
-			getNeighbour_Ip(tlv, &(iv->ip));
-			iv->port = getNeighbour_Port(tlv);
-			for(
-				l = base->list_voisin_potentiel;
-				l != NULL && memcmp((struct Index_Voisin *)l->objet, iv, sizeof(struct Index_Voisin)) != 0;
-				l = l->suite
-			);
-			if(l != NULL) {
-				free(iv);
-			} else {
-				base->list_voisin_potentiel = add_List(iv, base->list_voisin_potentiel);
-			}*/
+			/*Rien tout est déjà fait*/
 			break;
 
 		case 4 : //Data
@@ -711,7 +697,8 @@ if(DEBUG) {printf("traitement recv\n");}
 				printf("System Erreur :\n\tLe message n'a pas été envoyé\n");
 				goto encore;
 			} else if(memcmp("EXIT", chat+k, 4) != 0) {
-				pointeur = chat;printf("%d\n",rc+k);
+				pointeur = chat;
+if(DEBUG) {printf("%d\n",rc+k);}
 				for(k = k+rc; k > 0; k -= (255-13)) {
 					nonce = (((uint32_t) rand() <<  0) & 0x0000FFFFull) | (((uint32_t) rand() << 16) & 0xFFFF0000ull);
 					if(k < (255-13)) {
@@ -901,6 +888,4 @@ if(DEBUG) {printf("TAKEVOISIN2 k = %d\n", *k);}
 	if(memcmp(VOISIN(l)->index, iv, sizeof(struct Index_Voisin)) == 0) {return NULL;}
 	return VOISIN(l)->index;
 }
-
-//Test : Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 
